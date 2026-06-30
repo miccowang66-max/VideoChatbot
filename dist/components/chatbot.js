@@ -431,6 +431,63 @@
     return bestKey && bestCount > 0 ? bestKey : null;
   }
 
+  // ── Smart Search: parse natural language for score + category ──
+  function smartSearch(query) {
+    const q = query;
+    let filtered = [...movieData];
+    let applied = false;
+    let replyParts = [];
+
+    // 1. Parse score range
+    const scorePatterns = [
+      { regex: /(\d+\.?\d*)\s*分\s*以\s*上/, fn: (m, arr) => { const min=parseFloat(m[1]); replyParts.push(`${min}分以上`); return arr.filter(x=>(x.score_num||0)>=min); } },
+      { regex: /(\d+\.?\d*)\s*分\s*以\s*下/, fn: (m, arr) => { const max=parseFloat(m[1]); replyParts.push(`${max}分以下`); return arr.filter(x=>(x.score_num||0)<=max); } },
+      { regex: /(\d+)\s*[-~至到]\s*(\d+)\s*分/, fn: (m, arr) => { const lo=parseFloat(m[1]), hi=parseFloat(m[2]); replyParts.push(`${lo}-${hi}分`); return arr.filter(x=>{const s=x.score_num||0;return s>=lo&&s<=hi;}); } },
+      { regex: /評?分\s*[高大]/, fn: (m, arr) => { replyParts.push("高分"); return arr.filter(x=>(x.score_num||0)>=9); } },
+    ];
+    for (const p of scorePatterns) {
+      const m = q.match(p.regex);
+      if (m) {
+        const prev = filtered.length;
+        filtered = p.fn(m, filtered);
+        if (filtered.length < prev) applied = true;
+        break; // only apply first matching score pattern
+      }
+    }
+
+    // 2. Parse category from known category list
+    const allCats = [...new Set(movieData.flatMap(m => m.categories||[]))];
+    const foundCats = allCats.filter(cat => q.includes(cat));
+    if (foundCats.length > 0) {
+      const prev = filtered.length;
+      filtered = filtered.filter(m => {
+        const cats = m.categories || [];
+        return foundCats.some(c => cats.includes(c));
+      });
+      if (filtered.length < prev) { applied = true; replyParts.push(foundCats.join("、")); }
+    }
+
+    // 3. Parse country
+    const countries = [...new Set(movieData.map(m => m.country||"").filter(Boolean))];
+    for (const c of countries) {
+      const short = c.split("、")[0];
+      if (q.includes(c) || q.includes(short)) {
+        const prev = filtered.length;
+        filtered = filtered.filter(m => (m.country||"").includes(c) || (m.country||"").includes(short));
+        if (filtered.length < prev) { applied = true; replyParts.push(c); }
+        break;
+      }
+    }
+
+    if (!applied) return null;
+
+    filtered.sort((a,b) => (b.score_num||0) - (a.score_num||0));
+    const selected = filtered.slice(0, 5);
+    const random3 = pickRandom(selected.length > 3 ? selected : filtered, Math.min(3, filtered.length));
+    const reply = "🔍 " + (replyParts.length ? replyParts.join(" · ") + " " : "") + `找到 ${filtered.length} 部，推薦：`;
+    return { movies: random3, intro: reply };
+  }
+
   function handleQuickAction(act) {
     const labels = { blind:"🍿 盲盒抽片", top:"🔥 9.5分神作", romance:"🎭 愛情", action:"🥋 動作", suspense:"🧠 懸疑", sadness:"😢 劇情" };
     const label = labels[act] || act;
@@ -550,6 +607,13 @@
         typewriterReply("🤖 AI: " + llmResult.intro, llmResult.movies);
         return;
       }
+    }
+
+    // Try smart search (natural language score + category + country)
+    const smart = smartSearch(text);
+    if (smart) {
+      typewriterReply(smart.intro, smart.movies);
+      return;
     }
 
     // Fallback to keyword matching
