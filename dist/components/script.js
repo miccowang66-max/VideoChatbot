@@ -68,7 +68,7 @@ function buildCategoryView(cats) {
   for (const cat of sortedCats) {
     const movies = cats[cat].sort((a, b) => b.score_num - a.score_num);
     html += `<section class="category-section">`;
-    html += `<h2 class="category-title">${cat} <span style="font-size:14px;color:#6e7681">(${movies.length}部)</span></h2>`;
+    html += `<h2 class="category-title">${cat} <span class="cat-count">(${movies.length}部)</span></h2>`;
     html += `<div class="movie-grid">`;
     movies.forEach(m => { html += renderCard(m); });
     html += `</div></section>`;
@@ -93,16 +93,74 @@ function renderCard(m) {
   const score = m.score || "";
   const date = m.release_date_clean || "未提供";
   return `
-    <div class="movie-card">
-      <img src="${poster}" alt="${title}" loading="lazy" onerror="this.style.display='none'">
+    <div class="movie-card" data-movie-id="${m.id}" role="button" tabindex="0">
+      <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'">
       <div class="movie-info">
-        <div class="movie-title" title="${title}">${title}</div>
+        <div class="movie-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
         <div class="movie-meta">
           <span class="movie-score">${score}</span>
           <span class="movie-date">${date}</span>
         </div>
       </div>
     </div>`;
+}
+
+function escapeHtml(text) {
+  const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+// ── Movie Detail Modal ──────────────────────────────────────
+function showMovieDetail(movieId) {
+  const movie = MOVIES.find(m => m.id === movieId);
+  if (!movie) return;
+
+  const poster = movie.cover || `components/posters/${movie.id}.jpg`;
+  const title = (movie.title || "").split(" - ")[0];
+  const enTitle = (movie.title || "").split(" - ")[1] || "";
+  const score = movie.score_num || 0;
+  const categories = (movie.categories || []).join(", ");
+  const country = movie.country || "未知";
+  const runtime = movie.runtime || "未知";
+  const release = movie.release_date_clean || "未提供";
+  const stars = Array.from({length:5}, (_,s) => s < Math.min(5,Math.max(1,Math.round(score/2))) ? "★" : "☆").join("");
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "movie-detail-modal";
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeMovieDetail()">✕</button>
+      <div class="modal-poster">
+        <img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'">
+      </div>
+      <div class="modal-body">
+        <h2 class="modal-title">${escapeHtml(title)}</h2>
+        ${enTitle ? `<p class="modal-en">${escapeHtml(enTitle)}</p>` : ""}
+        <div class="modal-stars"><span style="color:#fbbf24">${stars}</span> ${score.toFixed(1)}</div>
+        <div class="modal-meta">
+          <div class="modal-row"><span>類別</span><span>${escapeHtml(categories)}</span></div>
+          <div class="modal-row"><span>國家</span><span>${escapeHtml(country)}</span></div>
+          <div class="modal-row"><span>片長</span><span>${escapeHtml(runtime)}</span></div>
+          <div class="modal-row"><span>上映</span><span>${escapeHtml(release)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) closeMovieDetail();
+  });
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+
+  document.addEventListener("keydown", function escHandler(e) {
+    if (e.key === "Escape") { closeMovieDetail(); document.removeEventListener("keydown", escHandler); }
+  });
+}
+
+function closeMovieDetail() {
+  const modal = document.getElementById("movie-detail-modal");
+  if (modal) modal.remove();
+  document.body.style.overflow = "";
 }
 
 // ── Render category buttons ─────────────────────────────────
@@ -145,12 +203,21 @@ function setCategoryFilter(cat) {
   currentCategory = cat;
   document.querySelectorAll("#category-btns .sort-btn").forEach(b => b.classList.remove("active"));
   if (cat) {
-    document.getElementById("btn-cat-" + cat).classList.add("active");
+    const el = document.getElementById("btn-cat-" + cat);
+    if (el) el.classList.add("active");
   } else {
     document.getElementById("btn-cat-all").classList.add("active");
   }
   rerender();
 }
+
+// ── Event delegation for movie cards ────────────────────────
+document.addEventListener("click", function(e) {
+  const card = e.target.closest(".movie-card");
+  if (!card) return;
+  const movieId = parseInt(card.getAttribute("data-movie-id"));
+  if (movieId) showMovieDetail(movieId);
+});
 
 // ── Init ────────────────────────────────────────────────────
 (async () => {
