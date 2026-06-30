@@ -354,7 +354,7 @@
             <div class="cb-mcard-info">
               <div class="cb-mcard-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
               <div class="cb-mcard-row"><span class="cb-mcard-stars">${stars}</span><span class="cb-mcard-score">${Number(score).toFixed(1)}</span></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;"><div class="cb-mcard-badges">${badges}</div><a href="${url}" target="_blank" class="cb-mcard-link">詳情 ▸</a></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;"><div class="cb-mcard-badges">${badges}</div><button onclick="chatbotShowDetail(${m.id})" class="cb-mcard-link">詳情 ▸</button></div>
             </div>
           </div>`;
       });
@@ -560,6 +560,57 @@
       typewriterReply(`抱歉，沒有找到與「${escapeHtml(text)}」相關的電影。<br>試試 🍿 盲盒抽片或 🔥 9.5分神作吧！`, []);
     }
   }
+
+  // ── MOVIE DETAIL VIEW ──────────────────────────────────────────
+  let chatLogsBackup = null;
+
+  window.chatbotShowDetail = function(movieId) {
+    const movie = movieData.find(m => (m.id || 0) === movieId);
+    if (!movie) return;
+
+    const logs = document.getElementById("chatbot-logs");
+    if (!chatLogsBackup) chatLogsBackup = logs.innerHTML;
+
+    const poster = movie.cover || movie.poster || "";
+    const title = (movie.title || "").split(" - ")[0];
+    const enTitle = (movie.title || "").split(" - ")[1] || "";
+    const score = movie.score_num || movie.score || 0;
+    const categories = Array.isArray(movie.categories) ? movie.categories.join(", ") : (movie.categories || "");
+    const country = movie.country || "未知";
+    const runtime = movie.runtime || "未知";
+    const release = movie.release_date_clean || "未提供";
+    const stars = Array.from({length:5}, (_,s) => s < Math.min(5,Math.max(1,Math.round(score/2))) ? "★" : "☆").join("");
+
+    logs.innerHTML = `
+      <div class="cb-detail">
+        <button class="cb-detail-back" onclick="chatbotGoBack()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          返回
+        </button>
+        <div class="cb-detail-poster">
+          <img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'">
+        </div>
+        <h2 class="cb-detail-title">${escapeHtml(title)}</h2>
+        ${enTitle ? `<p class="cb-detail-en">${escapeHtml(enTitle)}</p>` : ""}
+        <div class="cb-detail-meta">
+          <div class="cb-detail-row"><span class="cb-detail-label">評分</span><span class="cb-detail-value"><span style="color:#fbbf24">${stars}</span> ${score.toFixed(1)}</span></div>
+          <div class="cb-detail-row"><span class="cb-detail-label">類別</span><span class="cb-detail-value">${escapeHtml(categories)}</span></div>
+          <div class="cb-detail-row"><span class="cb-detail-label">國家</span><span class="cb-detail-value">${escapeHtml(country)}</span></div>
+          <div class="cb-detail-row"><span class="cb-detail-label">片長</span><span class="cb-detail-value">${escapeHtml(runtime)}</span></div>
+          <div class="cb-detail-row"><span class="cb-detail-label">上映</span><span class="cb-detail-value">${escapeHtml(release)}</span></div>
+        </div>
+      </div>`;
+    logs.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  window.chatbotGoBack = function() {
+    const logs = document.getElementById("chatbot-logs");
+    if (chatLogsBackup) {
+      logs.innerHTML = chatLogsBackup;
+      chatLogsBackup = null;
+      scrollToBottom();
+    }
+  };
 
   // ── INIT ────────────────────────────────────────────────────────
   function init() {
