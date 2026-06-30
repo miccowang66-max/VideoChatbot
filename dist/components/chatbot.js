@@ -90,6 +90,16 @@
     toggleBtn.onclick = togglePanel;
     body.appendChild(toggleBtn);
 
+    // "Return to App" top-right button
+    const appBtn = document.createElement("div");
+    appBtn.id = "cb-app-btn";
+    appBtn.innerHTML = `📋 電影列表`;
+    appBtn.onclick = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (isOpen) togglePanel();
+    };
+    body.appendChild(appBtn);
+
     // Window panel
     const windowEl = document.createElement("div");
     windowEl.id = "chatbot-window";

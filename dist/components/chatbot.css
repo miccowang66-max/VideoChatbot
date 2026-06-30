@@ -34,6 +34,17 @@
 /* ================================================================
    TOGGLE BUTTON
    ================================================================ */
+#cb-app-btn {
+  position: fixed; top: 16px; right: 24px; z-index: 2147483645;
+  background: rgba(22,27,34,0.92); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e5e7eb; font-size: 12px; font-weight: 600;
+  padding: 8px 16px; border-radius: 10px;
+  cursor: pointer; font-family: 'Inter',sans-serif;
+  transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+#cb-app-btn:hover { background: rgba(31,41,55,0.95); border-color: rgba(129,140,248,0.4); }
 #chatbot-toggle-btn {
   position: fixed; bottom: 24px; right: 24px; z-index: 2147483647;
   width: 56px; height: 56px; border-radius: 50%;
