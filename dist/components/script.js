@@ -92,7 +92,7 @@ function renderCard(m) {
   const title = m.title || "";
   const score = m.score || "";
   const date = m.release_date_clean || "未提供";
-  const url = m.detail_url || "#";
+  const url = m.id ? `/detail/${m.id}` : "#";
   return `
     <a href="${url}" target="_blank" class="movie-card" data-movie-id="${m.id}" style="text-decoration:none;color:inherit;display:block;">
       <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" 
