@@ -136,7 +136,7 @@
              <select id="cb-llm-provider" class="cb-select">
               <option value="openai">OpenAI</option>
               <option value="gemini">Gemini</option>
-              <option value="opencode">OpenCode</option>
+              <option value="grok">Grok</option>
             </select>
           </div>
           <div>
@@ -269,7 +269,7 @@
     const models = {
       openai: ["gpt-4o-mini","gpt-4o","gpt-3.5-turbo"],
       gemini: ["gemini-2.0-flash","gemini-2.5-pro","gemini-1.5-pro"],
-      opencode: ["gpt-4o-mini","gpt-4o","claude-3.5-sonnet"],
+      grok: ["grok-3-mini","grok-3"],
     };
     (models[provider] || ["gpt-4o-mini"]).forEach(m => {
       const opt = document.createElement("option");
@@ -485,7 +485,7 @@
         // OpenAI / OpenCode (OpenAI-compatible API)
         const urls = {
           openai: "https://api.openai.com/v1/chat/completions",
-          opencode: "https://api.openai.com/v1/chat/completions",
+          grok: "https://api.x.ai/v1/chat/completions",
         };
         const url = urls[llmProvider] || urls.openai;
         const model = llmModel || "gpt-4o-mini";
