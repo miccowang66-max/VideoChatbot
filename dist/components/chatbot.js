@@ -9,10 +9,10 @@
 
   // ── CONFIG ─────────────────────────────────────────────────────
   const CONFIG = {
-    botName: "MovieMind AI 影音特工",
+    botName: "HOT MOVIE小幫手",
     dataUrl: "data/clean_movies_20260630.json",
     posterBase: null, // null = use m.cover (remote URL) or fallback to local
-    defaultMsg: "哈囉！我是您的 <b>MovieMind AI 影音特工</b>。🎬<br>點擊下方快捷鍵或輸入喜好，我為您推薦好片！",
+    defaultMsg: "哈囉！我是您的 <b>HOT MOVIE小幫手</b>。🎬<br>點擊下方快捷鍵或輸入喜好，我為您推薦好片！",
     llmProvider: "openai",
     llmModel: "gpt-4o-mini",
   };
@@ -110,7 +110,7 @@
         <div class="cb-header-left">
           <span class="cb-header-icon">🤖</span>
           <div>
-            <div class="cb-header-title">MovieMind AI <span class="cb-header-brand">影音特工</span></div>
+             <div class="cb-header-title">HOT MOVIE<span class="cb-header-brand">小幫手</span></div>
             <div class="cb-header-status">
               <span class="cb-status-dot live"></span>
               <span class="cb-status-text">100 部神作連線中</span>
@@ -461,7 +461,7 @@
       return `[${m.id}] ${title} | 評分:${m.score_num||m.score} | 類別:${cats} | 國家:${m.country||""}`;
     }).join("\n");
 
-    const systemPrompt = `你是 MovieMind AI 影音特工，一個電影推薦助手。你擁有 100 部經典電影的資料庫。根據使用者輸入，從資料庫中推薦最合適的 3 部電影。只回覆電影編號(用逗號分隔，如: 1,5,23)和一句簡短推薦語。格式：\n電影: 1,5,23\n推薦語: [你的推薦]`;
+    const systemPrompt = `你是 HOT MOVIE小幫手，一個電影推薦助手。你擁有 100 部經典電影的資料庫。根據使用者輸入，從資料庫中推薦最合適的 3 部電影。只回覆電影編號(用逗號分隔，如: 1,5,23)和一句簡短推薦語。格式：\n電影: 1,5,23\n推薦語: [你的推薦]`;
     const userPrompt = `電影資料庫：\n${movieList}\n\n使用者查詢: ${userQuery}`;
 
     try {
