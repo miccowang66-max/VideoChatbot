@@ -1,34 +1,32 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>電影瀏覽器 & MovieMind AI 影音特工</title>
-  <link rel="stylesheet" href="components/style.css">
-  <link rel="stylesheet" href="components/chatbot.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電影瀏覽器 & MovieMind AI 影音特工</title>
+<link rel="stylesheet" href="components/style.css">
+<link rel="stylesheet" href="components/chatbot.css">
 </head>
 <body>
 
-  <!-- ==================== MOVIE BROWSER ==================== -->
-  <header>
-    <h1>電影瀏覽器</h1>
-    <div class="sort-bar">
-      <span>排序方式：</span>
-      <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
-      <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
-    </div>
-  </header>
+<header>
+  <h1>電影瀏覽器</h1>
+  <div class="sort-bar">
+    <span>排序方式：</span>
+    <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
+    <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+  </div>
+</header>
 
-  <main id="content">
-    <div class="loading">載入中...</div>
-  </main>
+<main id="content">
+  <div class="loading">載入中...</div>
+</main>
 
-  <footer>
-    <p>© 🎬 Movie Browser 電影瀏覽器. All Rights Reserved.</p>
-  </footer>
+<footer>
+  <p>© 🎬 Movie Browser 電影瀏覽器. All Rights Reserved.</p>
+</footer>
 
-  <!-- ==================== SCRIPTS ==================== -->
-  <script src="components/script.js"></script>
-  <script src="components/chatbot.js"></script>
+<script src="components/script.js"></script>
+<script src="components/chatbot.js"></script>
 </body>
 </html>
