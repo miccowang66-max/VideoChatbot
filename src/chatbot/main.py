@@ -1,9 +1,14 @@
 import json
 import os
+import re
 from pathlib import Path
+from urllib.parse import quote, unquote
 
-from fastapi import FastAPI, Query
-from fastapi.responses import FileResponse, JSONResponse
+import requests
+import urllib3
+from bs4 import BeautifulSoup
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -102,6 +107,115 @@ def chat_endpoint(req: ChatRequest):
         "reply": f"抱歉，沒有找到與「{req.message}」相關的電影。<br>試試 🍿 盲盒抽片或 🔥 9.5分神作吧！",
         "movies": []
     })
+
+
+# ── Movie detail scraper (director info) ──────────────────────
+DETAIL_CACHE = {}
+
+
+def scrape_detail(movie_id: int) -> dict:
+    if movie_id in DETAIL_CACHE:
+        return DETAIL_CACHE[movie_id]
+
+    result = {"director": ""}
+    try:
+        url = f"https://ssr1.scrape.center/detail/{movie_id}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        resp = requests.get(url, headers=headers, timeout=10, verify=False)
+        resp.encoding = "utf-8"
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        # Extract director from detail page
+        for el in soup.select(".item"):
+            text = el.get_text(strip=True)
+            if "導演" in text or "导演" in text:
+                result["director"] = text.split(":")[-1].split("：")[-1].strip()
+                break
+
+        # Also try director span
+        director_el = soup.select_one(".director") or soup.select_one("[class*='director']")
+        if not result["director"] and director_el:
+            result["director"] = director_el.get_text(strip=True)
+
+        if not result["director"]:
+            for el in soup.select(".el-row"):
+                txt = el.get_text(strip=True)
+                if "導演" in txt:
+                    m = re.search(r"導演[：:]\s*(.+)", txt)
+                    if m:
+                        result["director"] = m.group(1).strip()
+
+    except Exception:
+        pass
+
+    DETAIL_CACHE[movie_id] = result
+    return result
+
+
+@app.get("/api/movie/{movie_id}/detail")
+def movie_detail(movie_id: int):
+    return JSONResponse(scrape_detail(movie_id))
+
+
+# ── Detail page proxy ─────────────────────────────────────────
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+SCRAPE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+    "Referer": "https://ssr1.scrape.center/",
+}
+
+
+@app.get("/detail/{movie_id}", response_class=HTMLResponse)
+def proxy_detail(movie_id: int, request: Request):
+    """Proxy the detail page and rewrite image URLs to go through our image proxy."""
+    try:
+        url = f"https://ssr1.scrape.center/detail/{movie_id}"
+        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False)
+        resp.encoding = "utf-8"
+        html = resp.text
+
+        base = str(request.base_url).rstrip("/")
+
+        # Rewrite image src to use our proxy
+        def rewrite_img(m):
+            src = m.group(1)
+            if src.startswith("http"):
+                return f'src="{base}/proxy/image?url={quote(src, safe="")}"'
+            return m.group(0)
+
+        html = re.sub(r'src="(https?://[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"', rewrite_img, html)
+        html = re.sub(r"src='(https?://[^']+\.(?:jpg|jpeg|png|webp|gif)[^']*)'", lambda m: f"src='{base}/proxy/image?url={quote(m.group(1), safe='')}'", html)
+
+        # Rewrite CSS url() references
+        html = re.sub(r'url\(["\']?(https?://[^"\')\s]+\.(?:jpg|jpeg|png|webp|gif)[^"\')\s]*)["\']?\)',
+                      lambda m: f'url("{base}/proxy/image?url={quote(m.group(1), safe="")}")', html)
+
+        return HTMLResponse(content=html)
+    except Exception as e:
+        return HTMLResponse(content=f"<h2>無法載入詳情頁</h2><p>{e}</p>", status_code=502)
+
+
+@app.get("/proxy/image")
+def proxy_image(url: str):
+    """Proxy individual images to avoid hotlink/blocking."""
+    try:
+        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False, stream=True)
+        return StreamingResponse(
+            resp.iter_content(chunk_size=8192),
+            media_type=resp.headers.get("Content-Type", "image/jpeg"),
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception:
+        # Return a 1x1 transparent pixel as fallback
+        return StreamingResponse(
+            iter([b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x00\x00\x02\x00\x01\xe5\x27\xde\xfc\x00\x00\x00\x00IEND\xaeB`\x82"]),
+            media_type="image/png",
+        )
 
 
 # ── Hugging Face Spaces entry ─────────────────────────────────
