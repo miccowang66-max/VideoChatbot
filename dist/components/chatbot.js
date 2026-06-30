@@ -461,7 +461,14 @@
       return `[${m.id}] ${title} | 評分:${m.score_num||m.score} | 類別:${cats} | 國家:${m.country||""}`;
     }).join("\n");
 
-    const systemPrompt = `你是 HOT MOVIE小幫手，一個電影推薦助手。你擁有 100 部經典電影的資料庫。根據使用者輸入，從資料庫中推薦最合適的 3 部電影。只回覆電影編號(用逗號分隔，如: 1,5,23)和一句簡短推薦語。格式：\n電影: 1,5,23\n推薦語: [你的推薦]`;
+    const systemPrompt = `你是 HOT MOVIE小幫手，一個電影推薦助手。你擁有 100 部電影的資料庫，每部都有編號[id]。
+
+根據使用者的自然語言查詢，從資料庫中推薦最合適的 3 部電影。
+
+你必須嚴格依照以下格式回覆（不可多餘文字）：
+電影: id1,id2,id3
+推薦語: 一句簡短推薦說明`;
+
     const userPrompt = `電影資料庫：\n${movieList}\n\n使用者查詢: ${userQuery}`;
 
     try {
@@ -475,14 +482,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
-            generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+            generationConfig: { maxOutputTokens: 300, temperature: 0.5 },
           }),
         });
         if (!resp.ok) return null;
         data = await resp.json();
         content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       } else {
-        // OpenAI / OpenCode (OpenAI-compatible API)
         const urls = {
           openai: "https://api.openai.com/v1/chat/completions",
           grok: "https://api.x.ai/v1/chat/completions",
@@ -501,8 +507,8 @@
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
-            max_tokens: 200,
-            temperature: 0.7,
+            max_tokens: 300,
+            temperature: 0.5,
           }),
         });
         if (!resp.ok) return null;
@@ -512,15 +518,19 @@
 
       if (!content) return null;
 
-      // Parse movie IDs
-      const idMatch = content.match(/電影[：:]\s*([\d,\s]+)/) || content.match(/(\d+)[,\s]*(\d+)[,\s]*(\d+)/);
-      if (idMatch) {
-        const ids = (idMatch[1] + (idMatch[2]||"") + (idMatch[3]||"")).split(/[,\s]+/).map(Number).filter(n=>n>0);
-        const recMovies = ids.map(id => movieData.find(m => (m.id||0) === id)).filter(Boolean);
-        if (recMovies.length > 0) {
-          const recText = content.match(/推薦語[：:]\s*(.+)/)?.[1] || "AI 為您挑選：";
-          return { movies: recMovies.slice(0,3), intro: recText };
-        }
+      // Robust ID extraction: find ALL numbers in the response
+      const allNums = content.match(/\d+/g);
+      if (!allNums) return null;
+
+      // Match numbers to movie IDs, deduplicate, take top 3
+      const ids = [...new Set(allNums.map(Number).filter(n => n >= 1 && n <= 100))];
+      const recMovies = ids.map(id => movieData.find(m => (m.id||0) === id)).filter(Boolean).slice(0, 3);
+
+      if (recMovies.length > 0) {
+        // Extract recommendation text
+        const recMatch = content.match(/推薦語[：:]\s*(.+)/i) || content.match(/(?:推薦|推薦電影|為您推薦)[：:]\s*(.+)/i);
+        const recText = recMatch?.[1]?.trim() || "AI 為您智慧推薦：";
+        return { movies: recMovies, intro: recText };
       }
       return null;
     } catch(e) {
