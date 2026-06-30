@@ -212,11 +212,14 @@ def proxy_detail(movie_id: int, request: Request):
 def proxy_image(url: str):
     """Proxy individual images to avoid hotlink/blocking."""
     try:
-        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False, stream=True)
+        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=(10, 30), verify=False, stream=True)
         return StreamingResponse(
             resp.iter_content(chunk_size=8192),
             media_type=resp.headers.get("Content-Type", "image/jpeg"),
-            headers={"Cache-Control": "public, max-age=86400"},
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
     except Exception:
         # Return a 1x1 transparent pixel as fallback
