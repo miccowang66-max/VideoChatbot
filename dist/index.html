@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MovieMind AI 影音特工 - 100部經典電影推薦 Chatbot</title>
+  <title>電影瀏覽器 & MovieMind AI 影音特工</title>
+  
+  <!-- Original stylesheet for main movie page -->
+  <link rel="stylesheet" href="components/style.css">
+  
   <!-- Google Fonts: Outfit for titles, Inter for body -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +17,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      corePlugins: {
+        preflight: false, // CRITICAL: Disable Tailwind default element resets to prevent breaking original site styles
+      },
       theme: {
         extend: {
           fontFamily: {
@@ -38,202 +45,198 @@
     }
   </script>
 
-  <!-- Custom CSS for specialized visuals -->
+  <!-- Custom CSS for Chatbot Plugin -->
   <style>
-    /* Custom Scrollbar Styles */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    /* Scoped Chatbot styling */
+    .chatbot-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.02);
+    .chatbot-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.01);
       border-radius: 99px;
     }
-    ::-webkit-scrollbar-thumb {
+    .chatbot-scroll::-webkit-scrollbar-thumb {
       background: rgba(255, 107, 0, 0.3);
       border-radius: 99px;
-      transition: all 0.3s ease;
     }
-    ::-webkit-scrollbar-thumb:hover {
+    .chatbot-scroll::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 107, 0, 0.6);
     }
 
-    /* Backdrop Blur & Glassmorphism styles */
-    .glass-panel {
-      background: rgba(13, 14, 22, 0.82);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6), 
-                  0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    .chatbot-glass-panel {
+      background: rgba(13, 14, 22, 0.94);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.7), 
+                  0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
     
-    .glass-card {
-      background: rgba(25, 27, 40, 0.55);
+    .chatbot-glass-card {
+      background: rgba(25, 27, 40, 0.6);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
     }
-    .glass-card:hover {
-      background: rgba(30, 32, 48, 0.8);
+    .chatbot-glass-card:hover {
+      background: rgba(32, 34, 52, 0.85);
       border-color: rgba(0, 242, 254, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px -10px rgba(0, 242, 254, 0.2);
+      transform: translateY(-1px);
     }
 
-    /* Ambient animated neon circles in background */
-    @keyframes drift {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(4%, 6%) scale(1.15); }
-      100% { transform: translate(0, 0) scale(1); }
-    }
-    @keyframes pulse-slow {
-      0%, 100% { opacity: 0.25; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.1); }
+    @keyframes chatbot-float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0px); }
     }
     
-    .animate-drift {
-      animation: drift 15s ease-in-out infinite;
-    }
-    .animate-pulse-slow {
-      animation: pulse-slow 8s ease-in-out infinite;
-    }
-    .animate-pulse-slow-delay {
-      animation: pulse-slow 12s ease-in-out infinite;
-      animation-delay: 4s;
+    .chatbot-btn-float {
+      animation: chatbot-float 4s ease-in-out infinite;
     }
 
-    /* Message card slide up */
-    @keyframes fadeInUp {
+    @keyframes chatbot-fadeInUp {
       from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(8px);
       }
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-    .animate-fade-in-up {
-      animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .chatbot-animate-fade-in-up {
+      animation: chatbot-fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Typing cursor flash */
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-    .cursor-blink {
-      animation: blink 0.8s step-end infinite;
-    }
-    
-    /* Neon Glow Effects */
-    .glow-blue {
-      text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
-    }
-    .glow-orange {
-      text-shadow: 0 0 15px rgba(255, 107, 0, 0.6);
+    /* Override input placeholder in dark context */
+    #chatbot-user-input::placeholder {
+      color: rgba(148, 163, 184, 0.5);
     }
   </style>
 </head>
-<body class="bg-cinema-dark text-white font-sans min-h-screen relative flex items-center justify-center p-2 sm:p-4 overflow-x-hidden">
+<body>
 
-  <!-- Ambient Glowing Background Circles -->
-  <div class="fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br from-[#050508] via-[#090a10] to-[#040406]">
-    <div class="absolute -top-32 -left-32 w-[35rem] h-[35rem] bg-cyan-500/10 rounded-full blur-[130px] animate-pulse-slow"></div>
-    <div class="absolute -bottom-32 -right-32 w-[35rem] h-[35rem] bg-orange-600/10 rounded-full blur-[130px] animate-pulse-slow-delay"></div>
-    <div class="absolute top-1/3 left-1/4 w-[45rem] h-[45rem] bg-purple-600/5 rounded-full blur-[160px] animate-drift"></div>
+  <!-- ==================== PARENT WEB PAGE (MOVIE BROWSER) ==================== -->
+  <header>
+    <h1>電影瀏覽器</h1>
+    <div class="sort-bar">
+      <span>排序方式：</span>
+      <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
+      <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+    </div>
+  </header>
+
+  <main id="content">
+    <div class="loading">載入中...</div>
+  </main>
+
+  <footer>
+    <p>© 🎬 Movie Browser 電影瀏覽器. All Rights Reserved.</p>
+  </footer>
+
+
+  <!-- ==================== CHATBOT PLUGIN WIDGET ==================== -->
+
+  <!-- Floating Chat Toggle Button -->
+  <div id="chatbot-toggle-btn" onclick="toggleChatbot()" 
+       class="chatbot-btn-float fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-gradient-to-tr from-[#00f2fe] to-[#ff6b00] flex items-center justify-center cursor-pointer shadow-lg hover:scale-105 active:scale-95 transition-all group">
+    <!-- Unread Badge -->
+    <div id="chatbot-badge" class="absolute -top-1 -right-1 bg-[#ff6b00] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(255,107,0,0.8)] border border-white/20 animate-bounce">
+      AI
+    </div>
+    <!-- Chat Icon (SVG) -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6.5 w-6.5 text-white group-hover:rotate-6 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
   </div>
 
-  <!-- Main Chatbox Container -->
-  <div class="glass-panel w-full max-w-4xl h-[92vh] max-h-[850px] rounded-3xl overflow-hidden flex flex-col shadow-2xl relative">
+  <!-- Chatbot Window Panel -->
+  <div id="chatbot-window" 
+       class="chatbot-glass-panel fixed bottom-24 right-6 z-[9999] w-[400px] max-w-[calc(100vw-2rem)] h-[580px] max-h-[calc(100vh-8rem)] rounded-3xl overflow-hidden flex flex-col shadow-2xl hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0">
     
-    <!-- Top Header -->
-    <header class="px-6 py-4 flex items-center justify-between border-b border-white/10 relative bg-black/40">
-      <div class="flex items-center space-x-3.5">
-        <!-- Floating Cinema Glow Logo -->
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-600 flex items-center justify-center shadow-lg relative group overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-bl from-orange-400 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <span class="text-xl relative z-10">🍿</span>
-        </div>
+    <!-- Widget Header -->
+    <div class="px-5 py-3.5 flex items-center justify-between border-b border-white/10 bg-black/40">
+      <div class="flex items-center space-x-2.5">
+        <span class="text-xl">🤖</span>
         <div>
-          <h1 class="font-title font-bold text-xl sm:text-2xl tracking-wide bg-gradient-to-r from-[#00f2fe] via-cyan-300 to-[#ff6b00] bg-clip-text text-transparent drop-shadow-md">
-            🎬 MovieMind AI 影音特工
-          </h1>
-          <div class="flex items-center space-x-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <h2 class="font-title font-bold text-sm tracking-wide bg-gradient-to-r from-[#00f2fe] to-[#ff6b00] bg-clip-text text-transparent drop-shadow-sm m-0" style="font-family:'Outfit', sans-serif;">
+            MovieMind AI 影音特工
+          </h2>
+          <div class="flex items-center space-x-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute"></span>
-            <span class="text-[11px] text-slate-400 tracking-wider">智能語意對話引擎已連線</span>
+            <span class="text-[9px] text-slate-400 font-medium">100 部神作資料庫連線中</span>
           </div>
         </div>
       </div>
       
-      <!-- Counter Badge -->
-      <div class="hidden sm:flex flex-col items-end">
-        <span class="text-[11px] text-slate-400 tracking-wider uppercase font-semibold">影音圖庫資料庫</span>
-        <span class="text-xs font-bold text-cyan-400 glow-blue">100 部經典神作</span>
-      </div>
-    </header>
+      <!-- Close Button -->
+      <button onclick="toggleChatbot()" class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer p-1 rounded-lg hover:bg-white/5 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-    <!-- Chat Logs Box -->
-    <div id="chat-logs" class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-      <!-- System Greeting Message -->
-      <div class="flex space-x-3 max-w-[85%]">
-        <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
-        <div class="space-y-1">
-          <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
-          <div class="px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed text-slate-200 shadow-md">
-            哈囉！我是您的專屬 <b>MovieMind AI 影音特工</b>。🎬 
-            我擁有 100 部享譽國際的影史經典神作資料庫。<br><br>
-            您可以點擊下方快捷鍵直接探索，或是輸入您的心情與喜好（例如：<b>「我想看熱血動作爽片」</b>、<b>「推薦我幾部浪漫感人的愛情故事」</b>、或是<b>「有什麼燒腦懸疑片嗎？」</b>），我會即時為您篩選匹配最合適的高分好片！
+    <!-- Widget Chat Logs -->
+    <div id="chatbot-logs" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 chatbot-scroll">
+      <!-- Bot Hello Message -->
+      <div class="flex space-x-2.5 max-w-[85%]">
+        <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-sm">🤖</div>
+        <div class="space-y-0.5 flex-1">
+          <span class="text-[9px] text-slate-400 font-semibold tracking-wide">MOVIEMIND BOT</span>
+          <div class="px-3.5 py-2.5 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-xs leading-relaxed text-slate-200 shadow-md">
+            哈囉！我是您的 <b>MovieMind AI 影音特工</b>。🎬 我擁有 100 部經典神作資料庫。<br><br>
+            您可以點擊下方快捷鍵抽片，或者直接輸入您的喜好（如：<b>「我想看刺激爽片」</b>、<b>「推薦我催淚感人的故事」</b>），我會即時為您尋找匹配的好片喔！
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Recommendations Hotkeys -->
-    <div class="px-4 py-2 bg-black/20 border-t border-white/5 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center space-x-2">
-      <button onclick="handleQuickAction('🍿 盲盒抽片')" class="inline-flex items-center space-x-1.5 bg-gradient-to-r from-orange-500/20 to-pink-500/20 hover:from-orange-500/35 hover:to-pink-500/35 border border-orange-500/30 text-orange-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95 shadow-md">
-        <span>🍿</span> <span class="font-semibold">盲盒抽片</span>
+    <!-- Widget Quick Hotkeys -->
+    <div class="px-3 py-2 bg-black/20 border-t border-white/5 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center space-x-1.5">
+      <button onclick="chatbotHandleQuickAction('🍿 盲盒抽片')" class="inline-flex items-center space-x-1 bg-gradient-to-r from-orange-500/20 to-pink-500/20 hover:from-orange-500/30 hover:to-pink-500/30 border border-orange-500/30 text-orange-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>🍿 盲盒抽片</span>
       </button>
-      <button onclick="handleQuickAction('🔥 9.5分神作')" class="inline-flex items-center space-x-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
-        <span>🔥</span> <span>9.5分神作</span>
+      <button onclick="chatbotHandleQuickAction('🔥 9.5分神作')" class="inline-flex items-center space-x-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>🔥 9.5分</span>
       </button>
-      <button onclick="handleQuickAction('🎭 浪漫愛情')" class="inline-flex items-center space-x-1.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 text-pink-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
-        <span>🎭</span> <span>浪漫愛情</span>
+      <button onclick="chatbotHandleQuickAction('🎭 浪漫愛情')" class="inline-flex items-center space-x-1 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 text-pink-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>🎭 愛情</span>
       </button>
-      <button onclick="handleQuickAction('🥋 熱血動作')" class="inline-flex items-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
-        <span>🥋</span> <span>熱血動作</span>
+      <button onclick="chatbotHandleQuickAction('🥋 熱血動作')" class="inline-flex items-center space-x-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>🥋 動作</span>
       </button>
-      <button onclick="handleQuickAction('🧠 燒腦懸疑')" class="inline-flex items-center space-x-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
-        <span>🧠</span> <span>燒腦懸疑</span>
+      <button onclick="chatbotHandleQuickAction('🧠 燒腦懸疑')" class="inline-flex items-center space-x-1 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>🧠 懸疑</span>
       </button>
-      <button onclick="handleQuickAction('😢 催淚劇情')" class="inline-flex items-center space-x-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
-        <span>😢</span> <span>催淚劇情</span>
+      <button onclick="chatbotHandleQuickAction('😢 催淚劇情')" class="inline-flex items-center space-x-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-200 px-3 py-1 rounded-full text-[10px] font-semibold transition-all">
+        <span>😢 劇情</span>
       </button>
     </div>
 
-    <!-- Bottom Input Area -->
-    <div class="p-4 bg-black/40 border-t border-white/10 flex items-center space-x-2">
-      <div class="relative flex-1">
-        <input type="text" id="user-input" placeholder="請輸入您想看的電影類型、情緒、國家，例如：想哭、動作爽片..." 
-               class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all shadow-inner"
-               onkeydown="if(event.key === 'Enter') sendMessage()">
-        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs hidden md:inline">Enter 發送</span>
-      </div>
-      <button onclick="sendMessage()" class="bg-gradient-to-r from-[#00f2fe] to-[#ff6b00] hover:from-cyan-400 hover:to-orange-500 text-black font-semibold px-5 py-3.5 rounded-2xl flex items-center justify-center space-x-2 transition-all transform hover:scale-[1.03] active:scale-95 shadow-lg group">
-        <span class="text-sm">發送</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <!-- Widget Bottom Input Box -->
+    <div class="p-3 bg-black/40 border-t border-white/10 flex items-center space-x-1.5">
+      <input type="text" id="chatbot-user-input" placeholder="想看什麼電影呢？（如：爽片、想哭...）" 
+             class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all"
+             onkeydown="if(event.key === 'Enter') chatbotSendMessage()">
+      <button onclick="chatbotSendMessage()" class="bg-gradient-to-r from-[#00f2fe] to-[#ff6b00] hover:from-cyan-400 hover:to-orange-500 text-black font-bold p-2.5 rounded-xl flex items-center justify-center transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9-2-9-15-9 15 9-2zm0 0v-8" />
         </svg>
       </button>
     </div>
   </div>
 
-  <!-- JavaScript logic -->
+  <!-- Parent site script -->
+  <script src="components/script.js"></script>
+
+  <!-- Chatbot script plugin -->
   <script>
-    // Embedded 100 movies database
-    const movieData = [
+    // Embedded 100 movies database for chatbot
+    const chatbotMovieData = [
   {
     "id": 1,
     "title": "霸王别姬 - Farewell My Concubine",
@@ -1336,27 +1339,49 @@
   }
 ];
 
-    // Semantic Intent Matrix Config
-    const intentKeywords = {
+    // Toggle chatbot panel visibility
+    function toggleChatbot() {
+      const windowPanel = document.getElementById("chatbot-window");
+      const badge = document.getElementById("chatbot-badge");
+      
+      if (windowPanel.classList.contains("hidden")) {
+        windowPanel.classList.remove("hidden");
+        // Trigger style reflow for transitions
+        windowPanel.offsetHeight;
+        windowPanel.classList.remove("scale-95", "opacity-0");
+        windowPanel.classList.add("scale-100", "opacity-100");
+        
+        if (badge) badge.classList.add("hidden");
+      } else {
+        windowPanel.classList.remove("scale-100", "opacity-100");
+        windowPanel.classList.add("scale-95", "opacity-0");
+        setTimeout(() => {
+          windowPanel.classList.add("hidden");
+        }, 300);
+      }
+    }
+
+    // Keyword intent config
+    const chatbotIntents = {
       sadness: {
         words: ["想哭", "哭", "悲傷", "難過", "感人", "眼淚", "虐心", "催淚", "悲劇", "抑鬱", "治癒", "感動", "痛哭", "流淚", "感傷"],
         category: "剧情",
-        reply: "為您挑選了幾部極具情感張力、感人至深的經典劇情神作，準備好面紙喔... 😢"
+        reply: "為您挑選了幾部感人至深的經典劇情神作，準備好面紙喔... 😢"
       },
       romance: {
         words: ["愛情", "戀愛", "浪漫", "情侶", "甜蜜", "相愛", "初戀", "約會", "虐戀", "分開", "真愛", "閃光", "心動", "羅曼史"],
         category: "爱情",
-        reply: "浪漫微甜！為您精選浪漫動人的愛情經典，讓您感受愛情的酸甜苦辣... 🍿❤️"
+        reply: "為您精選浪漫動人的愛情經典，體驗愛情的酸甜苦辣... 🍿❤️"
       },
       action: {
         words: ["刺激", "打架", "爽片", "熱血", "動作", "犯罪", "槍戰", "爆破", "打鬥", "警匪", "黑幫", "格鬥", "極速", "冒險", "打殺"],
         category: "动作",
-        reply: "腎上腺素飆升時間！為您推薦爽度破表、打鬥刺激的動作與犯罪大片... 🥋💥"
+        reply: "腎上腺素飆升！推薦您爽度破表、打鬥刺激的動作與犯罪經典大片... 🥋💥"
       },
       comedy: {
         words: ["搞笑", "喜劇", "幽默", "爆笑", "開懷大笑", "歡樂", "放鬆", "開心", "有趣", "無厘頭", "笑死", "笑話"],
         category: "喜剧",
-        reply: "想放鬆一下？這幾部經典喜劇絕對能讓您捧腹大笑、忘卻煩惱... 🎭😂"
+        reply: "想放鬆一下？這幾部經典喜劇絕對能讓您大笑開懷、忘卻煩惱... 🎭😂"
       },
       scifi: {
         words: ["科幻", "宇宙", "未來", "外星人", "末日", "時空旅行", "平行宇宙", "機器人", "高科技", "AI", "人工智慧"],
@@ -1366,12 +1391,12 @@
       suspense: {
         words: ["懸疑", "燒腦", "推理", "解謎", "驚悚", "恐怖", "反轉", "心理", "智商", "暗黑", "密室", "謀殺", "鬼片", "嚇人"],
         category: "悬疑",
-        reply: "準備好您的腦細胞！這幾部高分懸疑驚悚神作，劇情反轉再反轉... 🧠🔍"
+        reply: "挑戰腦力極限！這幾部高分懸疑神作，劇情反轉再反轉... 🧠🔍"
       },
       animation: {
         words: ["動畫", "卡通", "宮崎駿", "吉卜力", "童年", "溫馨", "繪本", "龍貓", "千尋", "動漫"],
         category: "动画",
-        reply: "帶您走進充滿奇幻與童真的世界，精選經典動畫作品... 🎨✨"
+        reply: "帶您走進奇幻與童真的世界，精選經典動畫作品... 🎨✨"
       },
       war: {
         words: ["戰爭", "歷史", "和平", "軍事", "二戰", "史詩", "納粹", "將軍", "士兵"],
@@ -1380,58 +1405,53 @@
       }
     };
 
-    // Handle Quick Reply Action Button Click
-    function handleQuickAction(actionText) {
-      appendUserMessage(actionText);
+    function chatbotHandleQuickAction(actionText) {
+      chatbotAppendUserMessage(actionText);
       
       if (actionText === "🍿 盲盒抽片") {
-        triggerBlindBox();
+        chatbotTriggerBlindBox();
       } else if (actionText === "🔥 9.5分神作") {
-        triggerHighScores();
+        chatbotTriggerHighScores();
       } else if (actionText.includes("浪漫愛情")) {
-        triggerSemanticMatch("浪漫愛情", "romance");
+        chatbotTriggerSemanticMatch(actionText, "romance");
       } else if (actionText.includes("熱血動作")) {
-        triggerSemanticMatch("熱血動作", "action");
+        chatbotTriggerSemanticMatch(actionText, "action");
       } else if (actionText.includes("燒腦懸疑")) {
-        triggerSemanticMatch("燒腦懸疑", "suspense");
+        chatbotTriggerSemanticMatch(actionText, "suspense");
       } else if (actionText.includes("催淚劇情")) {
-        triggerSemanticMatch("催淚劇情", "sadness");
+        chatbotTriggerSemanticMatch(actionText, "sadness");
       }
     }
 
-    // Main trigger function for users sending input
-    function sendMessage() {
-      const inputEl = document.getElementById("user-input");
+    function chatbotSendMessage() {
+      const inputEl = document.getElementById("chatbot-user-input");
       const text = inputEl.value.trim();
       if (!text) return;
       
-      appendUserMessage(text);
+      chatbotAppendUserMessage(text);
       inputEl.value = "";
       
-      // Parse User Intent
-      processBotResponse(text);
+      chatbotProcessResponse(text);
     }
 
-    // Add user bubble to chat logs
-    function appendUserMessage(text) {
-      const chatLogs = document.getElementById("chat-logs");
-      const userMsgHtml = `
-        <div class="flex space-x-3 max-w-[85%] ml-auto justify-end">
-          <div class="space-y-1 text-right">
-            <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">YOU</span>
-            <div class="px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 border border-cyan-500/20 rounded-2xl rounded-tr-none text-sm text-cyan-50 leading-relaxed shadow-md">
-              \${escapeHtml(text)}
+    function chatbotAppendUserMessage(text) {
+      const logs = document.getElementById("chatbot-logs");
+      const html = `
+        <div class="flex space-x-2.5 max-w-[85%] ml-auto justify-end">
+          <div class="space-y-0.5 text-right">
+            <span class="text-[9px] text-slate-400 font-semibold tracking-wide">YOU</span>
+            <div class="px-3.5 py-2.5 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 border border-cyan-500/20 rounded-2xl rounded-tr-none text-xs text-cyan-50 leading-relaxed shadow-md">
+              \${chatbotEscapeHtml(text)}
             </div>
           </div>
-          <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-lg">👤</div>
+          <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-sm">👤</div>
         </div>
       `;
-      chatLogs.insertAdjacentHTML('beforeend', userMsgHtml);
-      scrollToBottom();
+      logs.insertAdjacentHTML('beforeend', html);
+      chatbotScrollToBottom();
     }
 
-    // Escaping helper to prevent XSS
-    function escapeHtml(text) {
+    function chatbotEscapeHtml(text) {
       const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -1439,162 +1459,132 @@
         '"': '&quot;',
         "'": '&#039;'
       };
-      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+      return text.replace(/[&<>"']/g, m => map[m]);
     }
 
     // Auto scroll chat list smoothly
-    function scrollToBottom() {
-      const chatLogs = document.getElementById("chat-logs");
-      chatLogs.scrollTo({
-        top: chatLogs.scrollHeight,
+    function chatbotScrollToBottom() {
+      const logs = document.getElementById("chatbot-logs");
+      logs.scrollTo({
+        top: logs.scrollHeight,
         behavior: 'smooth'
       });
     }
 
     // Create and append a Typing Loader bubble
-    function createTypingIndicator() {
-      const chatLogs = document.getElementById("chat-logs");
-      const indicatorId = "typing-" + Date.now();
-      const indicatorHtml = `
-        <div id="\${indicatorId}" class="flex space-x-3 max-w-[85%] animate-fade-in-up">
-          <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
-          <div class="space-y-1">
-            <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
-            <div class="flex items-center space-x-1.5 px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 shadow-md w-20">
-              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 0ms"></span>
-              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 150ms"></span>
-              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 300ms"></span>
+    function chatbotCreateIndicator() {
+      const logs = document.getElementById("chatbot-logs");
+      const id = "chatbot-typing-" + Date.now();
+      const html = `
+        <div id="\${id}" class="flex space-x-2.5 max-w-[85%] chatbot-animate-fade-in-up">
+          <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-sm">🤖</div>
+          <div class="space-y-0.5">
+            <span class="text-[9px] text-slate-400 font-semibold tracking-wide">MOVIEMIND BOT</span>
+            <div class="flex items-center space-x-1 px-3 py-2 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 shadow-md w-16">
+              <span class="w-1.5 h-1.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+              <span class="w-1.5 h-1.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+              <span class="w-1.5 h-1.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-delay: 300ms"></span>
             </div>
           </div>
         </div>
       `;
-      chatLogs.insertAdjacentHTML('beforeend', indicatorHtml);
-      scrollToBottom();
-      return indicatorId;
+      logs.insertAdjacentHTML('beforeend', html);
+      chatbotScrollToBottom();
+      return id;
     }
 
-    // Remove Typing Indicator
-    function removeTypingIndicator(id) {
+    function chatbotRemoveIndicator(id) {
       const el = document.getElementById(id);
       if (el) el.remove();
     }
 
-    // Simulate Typewriter text printing, and then load movie cards
-    function simulateTypewriterResponse(introText, moviesList) {
-      const typingId = createTypingIndicator();
+    function chatbotSimulateTypewriter(introText, movies) {
+      const typingId = chatbotCreateIndicator();
       
-      // Delay to represent thinking
       setTimeout(() => {
-        removeTypingIndicator(typingId);
+        chatbotRemoveIndicator(typingId);
         
-        const chatLogs = document.getElementById("chat-logs");
-        const uniqueMsgId = "msg-" + Date.now();
+        const logs = document.getElementById("chatbot-logs");
+        const uniqueId = "chatbot-msg-" + Date.now();
         
-        // Append response scaffold
-        const botMsgHtml = `
-          <div class="flex space-x-3 max-w-[85%] animate-fade-in-up">
-            <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
+        const botHtml = `
+          <div class="flex space-x-2.5 max-w-[85%] chatbot-animate-fade-in-up">
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-sm">🤖</div>
             <div class="space-y-2 flex-1">
-              <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
-              <div id="\${uniqueMsgId}-text" class="px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed text-slate-200 shadow-md inline-block font-medium"></div>
-              <div id="\${uniqueMsgId}-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 hidden"></div>
+              <span class="text-[9px] text-slate-400 font-semibold tracking-wide">MOVIEMIND BOT</span>
+              <div id="\${uniqueId}-text" class="px-3 py-2.5 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-xs leading-relaxed text-slate-200 shadow-md block font-medium"></div>
+              <div id="\${uniqueId}-cards" class="flex flex-col space-y-3.5 mt-2.5 hidden"></div>
             </div>
           </div>
         `;
-        chatLogs.insertAdjacentHTML('beforeend', botMsgHtml);
+        logs.insertAdjacentHTML('beforeend', botHtml);
         
-        const textContainer = document.getElementById(`\${uniqueMsgId}-text`);
-        const cardsContainer = document.getElementById(`\${uniqueMsgId}-cards`);
+        const textEl = document.getElementById(`\${uniqueId}-text`);
+        const cardsEl = document.getElementById(`\${uniqueId}-cards`);
         
-        // Typewriter simulation
-        let charIndex = 0;
-        const typingSpeed = 15; // ms per char
-        
+        let idx = 0;
         function type() {
-          if (charIndex < introText.length) {
-            textContainer.innerHTML += introText.charAt(charIndex);
-            charIndex++;
-            scrollToBottom();
-            setTimeout(type, typingSpeed);
+          if (idx < introText.length) {
+            textEl.innerHTML += introText.charAt(idx);
+            idx++;
+            chatbotScrollToBottom();
+            setTimeout(type, 15);
           } else {
-            // Typing finished, show movie cards
-            if (moviesList && moviesList.length > 0) {
-              renderMovieCards(cardsContainer, moviesList);
+            if (movies && movies.length > 0) {
+              chatbotRenderCards(cardsEl, movies);
             }
           }
         }
-        
         type();
       }, 500);
     }
 
     // Generate Card HTML and render into container
-    function renderMovieCards(container, movies) {
+    function chatbotRenderCards(container, movies) {
       container.classList.remove('hidden');
       
-      movies.forEach((movie, i) => {
-        // Generate Star Rating HTML
+      movies.forEach((movie, idx) => {
         const starCount = Math.min(5, Math.max(1, Math.round(movie.score / 2)));
-        let starsHtml = "";
+        let stars = "";
         for (let s = 0; s < 5; s++) {
-          if (s < starCount) {
-            starsHtml += "<span class='text-amber-400'>★</span>";
-          } else {
-            starsHtml += "<span class='text-slate-600'>★</span>";
-          }
+          stars += (s < starCount) ? "<span class='text-amber-400'>★</span>" : "<span class='text-slate-600'>★</span>";
         }
 
-        // Categories list conversion
-        const categoryBadges = movie.categories.split(',')
-          .map(cat => `<span class="bg-white/5 border border-white/10 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-medium">\${cat.trim()}</span>`)
+        // Categories list conversion (limit to 2 badges for compact widget)
+        const badges = movie.categories.split(',')
+          .slice(0, 2)
+          .map(cat => `<span class="bg-white/5 border border-white/10 text-slate-300 text-[9px] px-1.5 py-0.5 rounded font-medium">\${cat.trim()}</span>`)
           .join(" ");
 
         const cardHtml = `
-          <div class="glass-card rounded-2xl overflow-hidden flex flex-col h-full animate-fade-in-up" style="animation-delay: \${i * 120}ms">
-            <!-- Movie Poster with Elegant Skeleton Loader -->
-            <div class="relative h-44 overflow-hidden bg-slate-900 group">
-              <!-- Animated loading indicator behind cover -->
-              <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse"></div>
-              
-              <img src="\${movie.poster}" alt="\${movie.title}" 
-                   class="w-full h-full object-cover relative z-10 transition-all duration-700 ease-out group-hover:scale-105 opacity-0"
+          <div class="chatbot-glass-card rounded-xl overflow-hidden flex flex-row h-24 chatbot-animate-fade-in-up" style="animation-delay: \${idx * 100}ms">
+            <!-- Poster left side -->
+            <div class="w-16 h-full relative bg-slate-900 flex-shrink-0">
+              <div class="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 animate-pulse"></div>
+              <img src="\${movie.poster}" alt="\${movie.title}"
+                   class="w-full h-full object-cover relative z-10 opacity-0 transition-opacity"
                    onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100');"
-                   onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop'; this.classList.remove('opacity-0'); this.classList.add('opacity-100');">
-              
-              <!-- Top Score Overlay Tag -->
-              <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-lg text-xs font-bold flex items-center space-x-1">
-                <span class="text-amber-400 font-bold">\${movie.score.toFixed(1)}</span>
-              </div>
+                   onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=300&auto=format&fit=crop'; this.classList.remove('opacity-0'); this.classList.add('opacity-100');">
             </div>
-            
-            <!-- Movie Info Content -->
-            <div class="p-4 flex-1 flex flex-col justify-between space-y-3.5">
-              <div class="space-y-2">
-                <h3 class="font-title font-bold text-sm text-slate-100 line-clamp-1 group-hover:text-cyan-400 transition-colors" title="\${movie.title}">
-                  \${movie.title}
+            <!-- Info right side -->
+            <div class="flex-1 p-2.5 flex flex-col justify-between overflow-hidden">
+              <div class="space-y-0.5">
+                <h3 class="font-title font-bold text-xs text-slate-100 truncate m-0" title="\${movie.title}">
+                  \${movie.title.split(' - ')[0]}
                 </h3>
-                
-                <!-- Stars and basic meta -->
-                <div class="flex items-center space-x-2 text-xs">
-                  <div class="flex space-x-0.5 text-[13px]">\${starsHtml}</div>
+                <div class="flex items-center space-x-1.5 text-[10px]">
+                  <div class="flex text-[11px]">\${stars}</div>
                   <span class="text-slate-500">|</span>
-                  <span class="text-slate-400 font-medium">\${movie.runtime}</span>
+                  <span class="text-[#ff6b00] font-bold">\${movie.score.toFixed(1)}</span>
                 </div>
-
-                <!-- Genre Badges -->
-                <div class="flex flex-wrap gap-1 mt-1">\${categoryBadges}</div>
               </div>
               
-              <!-- Bottom Metadata and Button -->
-              <div class="pt-2 border-t border-white/5 flex items-center justify-between mt-auto">
-                <span class="text-[10px] text-slate-500 font-medium tracking-wide uppercase truncate max-w-[120px]" title="\${movie.country}">
-                  🌍 \${movie.country}
-                </span>
-                
-                <a href="\${movie.url}" target="_blank" 
-                   class="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/30 hover:border-cyan-400/50 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center space-x-1 shadow-sm">
-                  <span>查看詳情</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <div class="flex items-center justify-between mt-1">
+                <div class="flex space-x-1 overflow-hidden">\${badges}</div>
+                <a href="\${movie.url}" target="_blank"
+                   class="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/30 hover:border-cyan-400/50 text-cyan-300 text-[10px] font-bold px-2 py-1 rounded transition-all flex items-center space-x-0.5">
+                  <span>詳情</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
@@ -1605,116 +1595,91 @@
         container.insertAdjacentHTML('beforeend', cardHtml);
       });
       
-      // Force smooth scroll after cards appear
-      setTimeout(scrollToBottom, 150);
+      setTimeout(chatbotScrollToBottom, 150);
     }
 
-    // Trigger random Blind Box movie selection
-    function triggerBlindBox() {
-      const waitingPrompts = [
+    function chatbotTriggerBlindBox() {
+      const prompts = [
         "正在從 100 部神作中為您盲抽... 🍿",
-        "神秘大獎抽選中，正在過濾經典佳作... 🔮",
-        "影碟滾動中... 正在隨機選取一部您不能錯過的神片... 🎬"
+        "神秘電影抽取中，精選熱門經典... 🔮",
+        "輪盤滾動中... 正在隨機選取經典神片... 🎬"
       ];
+      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+      const typingId = chatbotCreateIndicator();
       
-      const randomPrompt = waitingPrompts[Math.floor(Math.random() * waitingPrompts.length)];
-      const typingId = createTypingIndicator();
-      
-      // Delay for 1 second suspense
       setTimeout(() => {
-        removeTypingIndicator(typingId);
-        
-        // Pick one completely random movie
-        const randomIndex = Math.floor(Math.random() * movieData.length);
-        const selectedMovie = movieData[randomIndex];
-        
-        const introText = `🎉 恭喜！盲盒為您抽中了第 \${selectedMovie.id} 號神作：<b>《\${selectedMovie.title.split(' - ')[0]}》</b>！這部影片的評分高達 \${selectedMovie.score} 分。祝您觀影愉快！`;
-        
-        simulateTypewriterResponse(introText, [selectedMovie]);
+        chatbotRemoveIndicator(typingId);
+        const randIdx = Math.floor(Math.random() * chatbotMovieData.length);
+        const movie = chatbotMovieData[randIdx];
+        const intro = `🎉 恭喜！為您抽中了第 \${movie.id} 號神作：<b>《\${movie.title.split(' - ')[0]}》</b>！評分 \${movie.score} 分。祝您觀影愉快！`;
+        chatbotSimulateTypewriter(intro, [movie]);
       }, 1000);
     }
 
-    // Trigger high scores recommendation
-    function triggerHighScores() {
-      // Filter score >= 9.5
-      const highScores = movieData.filter(m => m.score >= 9.5);
-      
-      // Randomly pick 4 from the list of 9.5+ movies
+    function chatbotTriggerHighScores() {
+      const high = chatbotMovieData.filter(m => m.score >= 9.5);
       const selected = [];
-      const tempArray = [...highScores];
-      for (let i = 0; i < 4 && tempArray.length > 0; i++) {
-        const idx = Math.floor(Math.random() * tempArray.length);
-        selected.push(tempArray.splice(idx, 1)[0]);
+      const temp = [...high];
+      for (let i = 0; i < 3 && temp.length > 0; i++) {
+        const r = Math.floor(Math.random() * temp.length);
+        selected.push(temp.splice(r, 1)[0]);
       }
-
-      const introText = `🔥 這些是評分高達 9.5 分以上的影史傳奇級神作！每一部都是無懈可擊的藝術殿堂經典，為您推薦以下佳作：`;
-      simulateTypewriterResponse(introText, selected);
+      const intro = `🔥 這些是評分高達 9.5 分以上的頂級傳奇神作！每一部都是必看經典：`;
+      chatbotSimulateTypewriter(intro, selected);
     }
 
-    // Trigger recommendation based on specific intent
-    function triggerSemanticMatch(queryText, intentKey) {
-      const intent = intentKeywords[intentKey];
-      const matchedMovies = movieData.filter(m => m.categories.includes(intent.category));
+    function chatbotTriggerSemanticMatch(queryText, intentKey) {
+      const intent = chatbotIntents[intentKey];
+      const matched = chatbotMovieData.filter(m => m.categories.includes(intent.category));
+      matched.sort((a, b) => b.score - a.score);
       
-      // Get top scores, pick 4 random top movies to vary results
-      matchedMovies.sort((a, b) => b.score - a.score);
-      const topMovies = matchedMovies.slice(0, 15);
-      
+      // Select 3 random from top 15
+      const top = matched.slice(0, 15);
       const selected = [];
-      const tempArray = [...topMovies];
-      for (let i = 0; i < 4 && tempArray.length > 0; i++) {
-        const idx = Math.floor(Math.random() * tempArray.length);
-        selected.push(tempArray.splice(idx, 1)[0]);
+      const temp = [...top];
+      for (let i = 0; i < 3 && temp.length > 0; i++) {
+        const r = Math.floor(Math.random() * temp.length);
+        selected.push(temp.splice(r, 1)[0]);
       }
-
-      simulateTypewriterResponse(intent.reply, selected);
+      chatbotSimulateTypewriter(intent.reply, selected);
     }
 
-    // Process Bot Semantic Response for user text
-    function processBotResponse(rawText) {
+    function chatbotProcessResponse(rawText) {
       const query = rawText.toLowerCase().trim();
       
-      // 1. Check for specific categories / intents first
-      let matchedIntentKey = null;
-      let highestMatchCount = 0;
-      
-      for (const [key, config] of Object.entries(intentKeywords)) {
+      // 1. Semantic Match
+      let matchedKey = null;
+      let maxCount = 0;
+      for (const [key, config] of Object.entries(chatbotIntents)) {
         let count = 0;
-        config.words.forEach(w => {
-          if (query.includes(w)) count++;
-        });
-        
-        if (count > highestMatchCount) {
-          highestMatchCount = count;
-          matchedIntentKey = key;
+        config.words.forEach(w => { if (query.includes(w)) count++; });
+        if (count > maxCount) {
+          maxCount = count;
+          matchedKey = key;
         }
       }
       
-      if (matchedIntentKey && highestMatchCount > 0) {
-        triggerSemanticMatch(rawText, matchedIntentKey);
+      if (matchedKey && maxCount > 0) {
+        chatbotTriggerSemanticMatch(rawText, matchedKey);
         return;
       }
 
-      // 2. Failsafe: Fuzzy text searching on Title, Category, Country
-      const fuzzyMatches = movieData.filter(m => {
+      // 2. Fuzzy Text Search
+      const fuzzy = chatbotMovieData.filter(m => {
         return m.title.toLowerCase().includes(query) || 
                m.categories.toLowerCase().includes(query) ||
-               m.country.toLowerCase().includes(query) ||
-               (m.release_date && m.release_date.includes(query));
+               m.country.toLowerCase().includes(query);
       });
 
-      if (fuzzyMatches.length > 0) {
-        // Sort by score
-        fuzzyMatches.sort((a, b) => b.score - a.score);
-        
-        // Pick up to 4 movies
-        const selected = fuzzyMatches.slice(0, 4);
-        const introText = `🔍 我在 100 部神作中為您找到了 \${fuzzyMatches.length} 部與「\${rawText}」相關的影片！為您推薦評分最高的幾部：`;
-        simulateTypewriterResponse(introText, selected);
+      if (fuzzy.length > 0) {
+        fuzzy.sort((a, b) => b.score - a.score);
+        const selected = fuzzy.slice(0, 3);
+        const intro = `🔍 為您尋找到 \${fuzzy.length} 部與「\${rawText}」相關的影片！推薦以下最受好評的作品：`;
+        chatbotSimulateTypewriter(intro, selected);
       } else {
-        // 3. Fallback: No matches found
-        const fallbackText = `抱歉，我沒有在我們的 100 部神作中找到與『\${rawText}』直接相關的電影。這可能是個冷門佳作，或者超出了我的資料庫範圍！<br><br>不過沒關係，您可以點擊下方的 <b>🍿 盲盒抽片</b>，或者讓我推薦幾部 <b>🔥 9.5分神作</b> 喔！`;
-        simulateTypewriterResponse(fallbackText, []);
+        // 3. Fallback
+        const fallback = `抱歉，我沒有在資料庫中找到與『\${rawText}』直接相關的電影。這可能超出了 100 部神作範圍！<br><br>不過沒關係，您可以點擊 <b>🍿 盲盒抽片</b>，或者讓我推薦幾部 <b>🔥 9.5分神作</b> 喔！`;
+        chatbotSimulateTypewriter(fallback, []);
       }
     }
   </script>
