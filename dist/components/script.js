@@ -112,7 +112,13 @@ function escapeHtml(text) {
 
 // ── Movie Detail Modal ──────────────────────────────────────
 async function showMovieDetail(movieId) {
-  const movie = MOVIES.find(m => m.id === movieId);
+  if (document.getElementById("movie-detail-modal")) return;
+
+  let movie = MOVIES.find(m => m.id === movieId);
+  if (!movie && MOVIES.length === 0) {
+    await loadMovies();
+    movie = MOVIES.find(m => m.id === movieId);
+  }
   if (!movie) return;
 
   const poster = movie.cover || `components/posters/${movie.id}.jpg`;
@@ -226,11 +232,12 @@ function setCategoryFilter(cat) {
 }
 
 // ── Event delegation for movie cards ────────────────────────
-document.addEventListener("click", function(e) {
+document.addEventListener("click", async function(e) {
   const card = e.target.closest(".movie-card");
   if (!card) return;
+  e.preventDefault();
   const movieId = parseInt(card.getAttribute("data-movie-id"));
-  if (movieId) showMovieDetail(movieId);
+  if (movieId && !isNaN(movieId)) showMovieDetail(movieId);
 });
 
 // ── Init ────────────────────────────────────────────────────
