@@ -92,8 +92,9 @@ function renderCard(m) {
   const title = m.title || "";
   const score = m.score || "";
   const date = m.release_date_clean || "未提供";
+  const url = m.detail_url || "#";
   return `
-    <div class="movie-card" data-movie-id="${m.id}" role="button" tabindex="0">
+    <a href="${url}" target="_blank" class="movie-card" data-movie-id="${m.id}" style="text-decoration:none;color:inherit;display:block;">
       <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'">
       <div class="movie-info">
         <div class="movie-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
@@ -102,7 +103,7 @@ function renderCard(m) {
           <span class="movie-date">${date}</span>
         </div>
       </div>
-    </div>`;
+    </a>`;
 }
 
 function escapeHtml(text) {
@@ -230,15 +231,6 @@ function setCategoryFilter(cat) {
   }
   rerender();
 }
-
-// ── Event delegation for movie cards ────────────────────────
-document.addEventListener("click", async function(e) {
-  const card = e.target.closest(".movie-card");
-  if (!card) return;
-  e.preventDefault();
-  const movieId = parseInt(card.getAttribute("data-movie-id"));
-  if (movieId && !isNaN(movieId)) showMovieDetail(movieId);
-});
 
 // ── Init ────────────────────────────────────────────────────
 (async () => {
