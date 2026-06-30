@@ -1,26 +1,1722 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>電影瀏覽器</title>
-<link rel="stylesheet" href="components/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieMind AI 影音特工 - 100部經典電影推薦 Chatbot</title>
+  <!-- Google Fonts: Outfit for titles, Inter for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            title: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            cinema: {
+              dark: '#07070a',
+              card: 'rgba(20, 22, 33, 0.65)',
+              primary: '#00f2fe',     // Neon Blue
+              secondary: '#ff6b00',   // Neon Orange
+              textMuted: '#94a3b8',
+            }
+          },
+          boxShadow: {
+            'neon-blue': '0 0 15px rgba(0, 242, 254, 0.35)',
+            'neon-orange': '0 0 15px rgba(255, 107, 0, 0.35)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS for specialized visuals -->
+  <style>
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 107, 0, 0.3);
+      border-radius: 99px;
+      transition: all 0.3s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 107, 0, 0.6);
+    }
+
+    /* Backdrop Blur & Glassmorphism styles */
+    .glass-panel {
+      background: rgba(13, 14, 22, 0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6), 
+                  0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    }
+    
+    .glass-card {
+      background: rgba(25, 27, 40, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+      background: rgba(30, 32, 48, 0.8);
+      border-color: rgba(0, 242, 254, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px -10px rgba(0, 242, 254, 0.2);
+    }
+
+    /* Ambient animated neon circles in background */
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(4%, 6%) scale(1.15); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.25; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.1); }
+    }
+    
+    .animate-drift {
+      animation: drift 15s ease-in-out infinite;
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 8s ease-in-out infinite;
+    }
+    .animate-pulse-slow-delay {
+      animation: pulse-slow 12s ease-in-out infinite;
+      animation-delay: 4s;
+    }
+
+    /* Message card slide up */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Typing cursor flash */
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    .cursor-blink {
+      animation: blink 0.8s step-end infinite;
+    }
+    
+    /* Neon Glow Effects */
+    .glow-blue {
+      text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+    }
+    .glow-orange {
+      text-shadow: 0 0 15px rgba(255, 107, 0, 0.6);
+    }
+  </style>
 </head>
-<body>
+<body class="bg-cinema-dark text-white font-sans min-h-screen relative flex items-center justify-center p-2 sm:p-4 overflow-x-hidden">
 
-<header>
-  <h1>電影瀏覽器</h1>
-  <div class="sort-bar">
-    <span>排序方式：</span>
-    <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
-    <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+  <!-- Ambient Glowing Background Circles -->
+  <div class="fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br from-[#050508] via-[#090a10] to-[#040406]">
+    <div class="absolute -top-32 -left-32 w-[35rem] h-[35rem] bg-cyan-500/10 rounded-full blur-[130px] animate-pulse-slow"></div>
+    <div class="absolute -bottom-32 -right-32 w-[35rem] h-[35rem] bg-orange-600/10 rounded-full blur-[130px] animate-pulse-slow-delay"></div>
+    <div class="absolute top-1/3 left-1/4 w-[45rem] h-[45rem] bg-purple-600/5 rounded-full blur-[160px] animate-drift"></div>
   </div>
-</header>
 
-<main id="content">
-  <div class="loading">載入中...</div>
-</main>
+  <!-- Main Chatbox Container -->
+  <div class="glass-panel w-full max-w-4xl h-[92vh] max-h-[850px] rounded-3xl overflow-hidden flex flex-col shadow-2xl relative">
+    
+    <!-- Top Header -->
+    <header class="px-6 py-4 flex items-center justify-between border-b border-white/10 relative bg-black/40">
+      <div class="flex items-center space-x-3.5">
+        <!-- Floating Cinema Glow Logo -->
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-600 flex items-center justify-center shadow-lg relative group overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-bl from-orange-400 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <span class="text-xl relative z-10">🍿</span>
+        </div>
+        <div>
+          <h1 class="font-title font-bold text-xl sm:text-2xl tracking-wide bg-gradient-to-r from-[#00f2fe] via-cyan-300 to-[#ff6b00] bg-clip-text text-transparent drop-shadow-md">
+            🎬 MovieMind AI 影音特工
+          </h1>
+          <div class="flex items-center space-x-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute"></span>
+            <span class="text-[11px] text-slate-400 tracking-wider">智能語意對話引擎已連線</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Counter Badge -->
+      <div class="hidden sm:flex flex-col items-end">
+        <span class="text-[11px] text-slate-400 tracking-wider uppercase font-semibold">影音圖庫資料庫</span>
+        <span class="text-xs font-bold text-cyan-400 glow-blue">100 部經典神作</span>
+      </div>
+    </header>
 
-<script src="components/script.js"></script>
+    <!-- Chat Logs Box -->
+    <div id="chat-logs" class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+      <!-- System Greeting Message -->
+      <div class="flex space-x-3 max-w-[85%]">
+        <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
+        <div class="space-y-1">
+          <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
+          <div class="px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed text-slate-200 shadow-md">
+            哈囉！我是您的專屬 <b>MovieMind AI 影音特工</b>。🎬 
+            我擁有 100 部享譽國際的影史經典神作資料庫。<br><br>
+            您可以點擊下方快捷鍵直接探索，或是輸入您的心情與喜好（例如：<b>「我想看熱血動作爽片」</b>、<b>「推薦我幾部浪漫感人的愛情故事」</b>、或是<b>「有什麼燒腦懸疑片嗎？」</b>），我會即時為您篩選匹配最合適的高分好片！
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Recommendations Hotkeys -->
+    <div class="px-4 py-2 bg-black/20 border-t border-white/5 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center space-x-2">
+      <button onclick="handleQuickAction('🍿 盲盒抽片')" class="inline-flex items-center space-x-1.5 bg-gradient-to-r from-orange-500/20 to-pink-500/20 hover:from-orange-500/35 hover:to-pink-500/35 border border-orange-500/30 text-orange-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95 shadow-md">
+        <span>🍿</span> <span class="font-semibold">盲盒抽片</span>
+      </button>
+      <button onclick="handleQuickAction('🔥 9.5分神作')" class="inline-flex items-center space-x-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
+        <span>🔥</span> <span>9.5分神作</span>
+      </button>
+      <button onclick="handleQuickAction('🎭 浪漫愛情')" class="inline-flex items-center space-x-1.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 text-pink-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
+        <span>🎭</span> <span>浪漫愛情</span>
+      </button>
+      <button onclick="handleQuickAction('🥋 熱血動作')" class="inline-flex items-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
+        <span>🥋</span> <span>熱血動作</span>
+      </button>
+      <button onclick="handleQuickAction('🧠 燒腦懸疑')" class="inline-flex items-center space-x-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
+        <span>🧠</span> <span>燒腦懸疑</span>
+      </button>
+      <button onclick="handleQuickAction('😢 催淚劇情')" class="inline-flex items-center space-x-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-200 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all transform hover:-translate-y-0.5 active:scale-95">
+        <span>😢</span> <span>催淚劇情</span>
+      </button>
+    </div>
+
+    <!-- Bottom Input Area -->
+    <div class="p-4 bg-black/40 border-t border-white/10 flex items-center space-x-2">
+      <div class="relative flex-1">
+        <input type="text" id="user-input" placeholder="請輸入您想看的電影類型、情緒、國家，例如：想哭、動作爽片..." 
+               class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all shadow-inner"
+               onkeydown="if(event.key === 'Enter') sendMessage()">
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs hidden md:inline">Enter 發送</span>
+      </div>
+      <button onclick="sendMessage()" class="bg-gradient-to-r from-[#00f2fe] to-[#ff6b00] hover:from-cyan-400 hover:to-orange-500 text-black font-semibold px-5 py-3.5 rounded-2xl flex items-center justify-center space-x-2 transition-all transform hover:scale-[1.03] active:scale-95 shadow-lg group">
+        <span class="text-sm">發送</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9-2-9-15-9 15 9-2zm0 0v-8" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript logic -->
+  <script>
+    // Embedded 100 movies database
+    const movieData = [
+  {
+    "id": 1,
+    "title": "霸王别姬 - Farewell My Concubine",
+    "score": 9.5,
+    "categories": "剧情, 爱情",
+    "country": "中国内地、中国香港",
+    "runtime": "171 分钟",
+    "release_date": "1993-07-26",
+    "poster": "https://p0.meituan.net/movie/ce4da3e03e655b5b88ed31b5cd7896cf62472.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/1"
+  },
+  {
+    "id": 2,
+    "title": "这个杀手不太冷 - Léon",
+    "score": 9.5,
+    "categories": "剧情, 动作, 犯罪",
+    "country": "法国",
+    "runtime": "110 分钟",
+    "release_date": "1994-09-14",
+    "poster": "https://p1.meituan.net/movie/6bea9af4524dfbd0b668eaa7e187c3df767253.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/2"
+  },
+  {
+    "id": 3,
+    "title": "肖申克的救赎 - The Shawshank Redemption",
+    "score": 9.5,
+    "categories": "剧情, 犯罪",
+    "country": "美国",
+    "runtime": "142 分钟",
+    "release_date": "1994-09-10",
+    "poster": "https://p0.meituan.net/movie/283292171619cdfd5b240c8fd093f1eb255670.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/3"
+  },
+  {
+    "id": 4,
+    "title": "泰坦尼克号 - Titanic",
+    "score": 9.5,
+    "categories": "剧情, 爱情, 灾难",
+    "country": "美国",
+    "runtime": "194 分钟",
+    "release_date": "1998-04-03",
+    "poster": "https://p1.meituan.net/movie/b607fba7513e7f15eab170aac1e1400d878112.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/4"
+  },
+  {
+    "id": 5,
+    "title": "罗马假日 - Roman Holiday",
+    "score": 9.5,
+    "categories": "剧情, 喜剧, 爱情",
+    "country": "美国",
+    "runtime": "118 分钟",
+    "release_date": "1953-08-20",
+    "poster": "https://p0.meituan.net/movie/289f98ceaa8a0ae737d3dc01cd05ab052213631.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/5"
+  },
+  {
+    "id": 6,
+    "title": "唐伯虎点秋香 - Flirting Scholar",
+    "score": 9.5,
+    "categories": "喜剧, 爱情, 古装",
+    "country": "中国香港",
+    "runtime": "102 分钟",
+    "release_date": "1993-07-01",
+    "poster": "https://p0.meituan.net/movie/da64660f82b98cdc1b8a3804e69609e041108.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/6"
+  },
+  {
+    "id": 7,
+    "title": "乱世佳人 - Gone with the Wind",
+    "score": 9.5,
+    "categories": "剧情, 爱情, 历史, 战争",
+    "country": "美国",
+    "runtime": "238 分钟",
+    "release_date": "1939-12-15",
+    "poster": "https://p0.meituan.net/movie/223c3e186db3ab4ea3bb14508c709400427933.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/7"
+  },
+  {
+    "id": 8,
+    "title": "喜剧之王 - The King of Comedy",
+    "score": 9.5,
+    "categories": "剧情, 喜剧, 爱情",
+    "country": "中国香港",
+    "runtime": "85 分钟",
+    "release_date": "1999-02-13",
+    "poster": "https://p0.meituan.net/movie/1f0d671f6a37f9d7b015e4682b8b113e174332.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/8"
+  },
+  {
+    "id": 9,
+    "title": "楚门的世界 - The Truman Show",
+    "score": 9.0,
+    "categories": "剧情, 科幻",
+    "country": "美国",
+    "runtime": "103 分钟",
+    "release_date": "",
+    "poster": "https://p0.meituan.net/movie/8959888ee0c399b0fe53a714bc8a5a17460048.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/9"
+  },
+  {
+    "id": 10,
+    "title": "狮子王 - The Lion King",
+    "score": 9.0,
+    "categories": "动画, 歌舞, 冒险",
+    "country": "美国",
+    "runtime": "89 分钟",
+    "release_date": "1995-07-15",
+    "poster": "https://p0.meituan.net/movie/27b76fe6cf3903f3d74963f70786001e1438406.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/10"
+  },
+  {
+    "id": 11,
+    "title": "V字仇杀队 - V for Vendetta",
+    "score": 8.9,
+    "categories": "剧情, 动作, 科幻, 惊悚",
+    "country": "美国、英国、德国",
+    "runtime": "132 分钟",
+    "release_date": "2005-12-11",
+    "poster": "https://p1.meituan.net/movie/06ec3c1c647942b1e40bca84036014e9490863.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/11"
+  },
+  {
+    "id": 12,
+    "title": "少年派的奇幻漂流 - Life of Pi",
+    "score": 8.9,
+    "categories": "剧情, 奇幻, 冒险",
+    "country": "美国、中国台湾、英国、加拿大",
+    "runtime": "127 分钟",
+    "release_date": "2012-11-22",
+    "poster": "https://p0.meituan.net/movie/34998e31c6d07475f1add6b8b16fd21d192579.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/12"
+  },
+  {
+    "id": 13,
+    "title": "美丽心灵 - A Beautiful Mind",
+    "score": 8.8,
+    "categories": "剧情, 传记",
+    "country": "美国",
+    "runtime": "135 分钟",
+    "release_date": "2001-12-13",
+    "poster": "https://p0.meituan.net/movie/7b7d1f8aa36d7a15463ce6942708a1a7265296.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/13"
+  },
+  {
+    "id": 14,
+    "title": "初恋这件小事 - สิ่งเล็กเล็กที่เรียกว่า...รัก",
+    "score": 8.9,
+    "categories": "喜剧, 爱情",
+    "country": "泰国",
+    "runtime": "118 分钟",
+    "release_date": "2012-06-05",
+    "poster": "https://p1.meituan.net/movie/05bc2f0ccf97aacfa64fcac4f237cf8082385.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/14"
+  },
+  {
+    "id": 15,
+    "title": "借东西的小人阿莉埃蒂 - 借りぐらしのアリエッティ",
+    "score": 8.8,
+    "categories": "动画, 奇幻, 冒险",
+    "country": "日本",
+    "runtime": "94 分钟",
+    "release_date": "2010-07-17",
+    "poster": "https://p1.meituan.net/movie/640cc32445df972b066c9a04b194da141104515.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/15"
+  },
+  {
+    "id": 16,
+    "title": "一一 - Yi yi: A One and a Two",
+    "score": 8.8,
+    "categories": "剧情, 爱情, 家庭",
+    "country": "中国台湾、日本",
+    "runtime": "173 分钟",
+    "release_date": "2000-05-15",
+    "poster": "https://p0.meituan.net/movie/6cb23356f9d8e0b506349561c633310d102189.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/16"
+  },
+  {
+    "id": 17,
+    "title": "美丽人生 - La vita è bella",
+    "score": 9.1,
+    "categories": "战争, 剧情, 爱情",
+    "country": "意大利",
+    "runtime": "116 分钟",
+    "release_date": "2020-01-03",
+    "poster": "https://p1.meituan.net/movie/580d81a2c78bf204f45323ddb4244b6c6821175.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/17"
+  },
+  {
+    "id": 18,
+    "title": "海上钢琴师 - La leggenda del pianista sull'oceano",
+    "score": 9.1,
+    "categories": "剧情, 爱情, 音乐",
+    "country": "意大利",
+    "runtime": "126 分钟",
+    "release_date": "2019-11-15",
+    "poster": "https://p0.meituan.net/movie/609e45bd40346eb8b927381be8fb27a61760914.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/18"
+  },
+  {
+    "id": 19,
+    "title": "千与千寻 - 千と千尋の神隠し",
+    "score": 9.1,
+    "categories": "动画, 冒险, 奇幻, 家庭",
+    "country": "日本",
+    "runtime": "125 分钟",
+    "release_date": "2019-06-21",
+    "poster": "https://p0.meituan.net/movie/30b20139e68c46d02e0893277d633b701292458.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/19"
+  },
+  {
+    "id": 20,
+    "title": "迁徙的鸟 - The Travelling Birds",
+    "score": 9.1,
+    "categories": "纪录片",
+    "country": "法国、德国、意大利、西班牙、瑞士",
+    "runtime": "98 分钟",
+    "release_date": "2001-12-12",
+    "poster": "https://p1.meituan.net/movie/a1634f4e49c8517ae0a3e4adcac6b0dc43994.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/20"
+  },
+  {
+    "id": 21,
+    "title": "黄金三镖客 - Il buono, il brutto, il cattivo.",
+    "score": 9.1,
+    "categories": "西部, 冒险",
+    "country": "意大利、西班牙、西德",
+    "runtime": "161 分钟",
+    "release_date": "1966-12-23",
+    "poster": "https://p0.meituan.net/movie/cd18ed2c5cda9e71e17e5e6ef61ced172912303.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/21"
+  },
+  {
+    "id": 22,
+    "title": "海洋 - Océans",
+    "score": 9.1,
+    "categories": "纪录片",
+    "country": "法国、瑞士、西班牙、美国、阿联酋",
+    "runtime": "104 分钟",
+    "release_date": "2011-08-12",
+    "poster": "https://p1.meituan.net/movie/a19a7f64a10e133b68de87d2f3bc46f3111417.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/22"
+  },
+  {
+    "id": 23,
+    "title": "我爱你 - 그대를 사랑합니다",
+    "score": 9.1,
+    "categories": "剧情, 爱情",
+    "country": "韩国",
+    "runtime": "118 分钟",
+    "release_date": "2011-02-17",
+    "poster": "https://p1.meituan.net/movie/ed50b58bf636d207c56989872a91f4cf305138.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/23"
+  },
+  {
+    "id": 24,
+    "title": "阿飞正传 - Days of Being Wild",
+    "score": 9.1,
+    "categories": "剧情, 爱情, 犯罪",
+    "country": "中国香港",
+    "runtime": "94 分钟",
+    "release_date": "2018-06-25",
+    "poster": "https://p0.meituan.net/movie/85215b28d568ea8e2c97766edd95f890210522.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/24"
+  },
+  {
+    "id": 25,
+    "title": "7号房的礼物 - 7번방의 선물",
+    "score": 8.8,
+    "categories": "剧情, 喜剧, 家庭",
+    "country": "韩国",
+    "runtime": "127 分钟",
+    "release_date": "2013-01-23",
+    "poster": "https://p1.meituan.net/movie/a53a0200eba15ba483c905c872db9bf4331099.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/36"
+  },
+  {
+    "id": 26,
+    "title": "爱·回家 - 집으로...",
+    "score": 9.1,
+    "categories": "剧情, 家庭",
+    "country": "韩国",
+    "runtime": "80 分钟",
+    "release_date": "2002-04-05",
+    "poster": "https://p0.meituan.net/movie/de1142a5dceb901eb939eb0bcfc2f88470909.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/25"
+  },
+  {
+    "id": 27,
+    "title": "龙猫 - となりのトトロ",
+    "score": 9.1,
+    "categories": "动画, 冒险, 奇幻, 家庭",
+    "country": "日本",
+    "runtime": "86 分钟",
+    "release_date": "2018-12-14",
+    "poster": "https://p0.meituan.net/movie/c304c687e287c7c2f9e22cf78257872d277201.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/26"
+  },
+  {
+    "id": 28,
+    "title": "七武士 - 七人の侍",
+    "score": 8.8,
+    "categories": "剧情, 动作, 冒险",
+    "country": "日本",
+    "runtime": "207 分钟",
+    "release_date": "1954-04-26",
+    "poster": "https://p1.meituan.net/movie/4ffca83fd972f71e291f8ea8d78a4b58594878.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/27"
+  },
+  {
+    "id": 29,
+    "title": "美国往事 - Once Upon a Time in America",
+    "score": 8.8,
+    "categories": "剧情, 犯罪",
+    "country": "意大利、美国",
+    "runtime": "229 分钟",
+    "release_date": "2015-04-23",
+    "poster": "https://p1.meituan.net/movie/92198a6fc8c3f5d13aa1bdf203572c0f99438.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/28"
+  },
+  {
+    "id": 30,
+    "title": "完美的世界 - A Perfect World",
+    "score": 8.8,
+    "categories": "剧情, 犯罪",
+    "country": "美国",
+    "runtime": "138 分钟",
+    "release_date": "1993-11-24",
+    "poster": "https://p1.meituan.net/movie/30310858fdab34c7a17cfd7ec8ad8bfc112201.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/29"
+  },
+  {
+    "id": 31,
+    "title": "上帝之城 - Cidade de Deus",
+    "score": 8.8,
+    "categories": "剧情, 犯罪",
+    "country": "巴西、法国",
+    "runtime": "130 分钟",
+    "release_date": "",
+    "poster": "https://p1.meituan.net/movie/b553d13f30100db731ab6cf45668e52d94703.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/30"
+  },
+  {
+    "id": 32,
+    "title": "辩护人 - 변호인",
+    "score": 8.8,
+    "categories": "剧情",
+    "country": "韩国",
+    "runtime": "127 分钟",
+    "release_date": "2013-12-18",
+    "poster": "https://p0.meituan.net/movie/1433d81b10d116239dbbf02a06ac3c19265682.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/31"
+  },
+  {
+    "id": 33,
+    "title": "忠犬八公物语 - ハチ公物語",
+    "score": 8.8,
+    "categories": "剧情",
+    "country": "日本",
+    "runtime": "107 分钟",
+    "release_date": "1987-08-01",
+    "poster": "https://p0.meituan.net/movie/2d42e00d7ee59ff5bd574f93b8558aa726665.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/32"
+  },
+  {
+    "id": 34,
+    "title": "海豚湾 - The Cove",
+    "score": 8.8,
+    "categories": "纪录片",
+    "country": "美国",
+    "runtime": "92 分钟",
+    "release_date": "2009-07-31",
+    "poster": "https://p0.meituan.net/movie/eb2ea56996f21e7fb47b1a0736c7f177258901.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/33"
+  },
+  {
+    "id": 35,
+    "title": "英雄本色 - A Better Tomorrow",
+    "score": 8.8,
+    "categories": "剧情, 动作, 犯罪",
+    "country": "中国香港",
+    "runtime": "95 分钟",
+    "release_date": "2017-11-17",
+    "poster": "https://p0.meituan.net/movie/3e5f5f3aa4b7e5576521e26c2c7c894d253975.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/34"
+  },
+  {
+    "id": 36,
+    "title": "恐怖直播 - 더 테러 라이브",
+    "score": 8.8,
+    "categories": "剧情, 悬疑, 犯罪",
+    "country": "韩国",
+    "runtime": "97 分钟",
+    "release_date": "2013-07-31",
+    "poster": "https://p0.meituan.net/movie/1da0af2570fe697d38c4a37fdfded19b254936.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/35"
+  },
+  {
+    "id": 37,
+    "title": "窃听风暴 - Das Leben der Anderen",
+    "score": 8.8,
+    "categories": "剧情, 悬疑",
+    "country": "德国",
+    "runtime": "137 分钟",
+    "release_date": "2006-03-23",
+    "poster": "https://p0.meituan.net/movie/3985eaf3858bea0f2a3d966bf7ee2103178217.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/37"
+  },
+  {
+    "id": 38,
+    "title": "时空恋旅人 - About Time",
+    "score": 8.8,
+    "categories": "喜剧, 爱情, 奇幻",
+    "country": "英国",
+    "runtime": "123 分钟",
+    "release_date": "2013-09-04",
+    "poster": "https://p0.meituan.net/movie/6d8491386d07cda91967a6fbbd0d0788294693.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/38"
+  },
+  {
+    "id": 39,
+    "title": "穿条纹睡衣的男孩 - The Boy in the Striped Pajamas",
+    "score": 8.8,
+    "categories": "剧情, 战争",
+    "country": "英国、美国",
+    "runtime": "94 分钟",
+    "release_date": "2008-08-28",
+    "poster": "https://p1.meituan.net/movie/d5970e36c8868a4b746c80f3b3f8a404174615.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/39"
+  },
+  {
+    "id": 40,
+    "title": "教父 - The Godfather",
+    "score": 8.8,
+    "categories": "剧情, 犯罪",
+    "country": "美国",
+    "runtime": "175 分钟",
+    "release_date": "2015-04-18",
+    "poster": "https://p0.meituan.net/movie/1199dc6273680f175fd9b06c9c36d08a219658.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/40"
+  },
+  {
+    "id": 41,
+    "title": "萤火之森 - 蛍火の杜へ",
+    "score": 8.8,
+    "categories": "剧情, 爱情, 动画, 奇幻",
+    "country": "日本",
+    "runtime": "45 分钟",
+    "release_date": "2011-09-17",
+    "poster": "https://p1.meituan.net/movie/4c55f3bf5fa9660db3cb7014651a0950267034.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/41"
+  },
+  {
+    "id": 42,
+    "title": "素媛 - 소원",
+    "score": 8.8,
+    "categories": "剧情",
+    "country": "韩国",
+    "runtime": "123 分钟",
+    "release_date": "2013-10-02",
+    "poster": "https://p0.meituan.net/movie/19653e8af59cf473cd40f9ccc0658d93692304.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/42"
+  },
+  {
+    "id": 43,
+    "title": "小鞋子 - بچههای آسمان",
+    "score": 8.8,
+    "categories": "剧情, 家庭",
+    "country": "伊朗",
+    "runtime": "89 分钟",
+    "release_date": "",
+    "poster": "https://p1.meituan.net/movie/135c612860fae899df2220149664d97a173555.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/43"
+  },
+  {
+    "id": 44,
+    "title": "熔炉 - 도가니",
+    "score": 8.8,
+    "categories": "剧情",
+    "country": "韩国",
+    "runtime": "125 分钟",
+    "release_date": "2011-09-22",
+    "poster": "https://p1.meituan.net/movie/2a0783b4fd95566568f24adfad2181bb5392280.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/44"
+  },
+  {
+    "id": 45,
+    "title": "大话西游之大圣娶亲 - A Chinese Odyssey Part Two - Cinderella",
+    "score": 8.9,
+    "categories": "喜剧, 爱情, 奇幻",
+    "country": "中国香港、中国大陆",
+    "runtime": "110 分钟",
+    "release_date": "2014-10-24",
+    "poster": "https://p1.meituan.net/moviemachine/508056769092059fe43a611b949f27d14863831.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/45"
+  },
+  {
+    "id": 46,
+    "title": "新龙门客栈 - New Dragon Gate Inn",
+    "score": 8.9,
+    "categories": "动作, 爱情, 武侠, 古装",
+    "country": "中国香港、中国大陆",
+    "runtime": "88 分钟",
+    "release_date": "2012-02-24",
+    "poster": "https://p1.meituan.net/movie/7833126c8c21a11571bb52fbdece0acb811449.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/46"
+  },
+  {
+    "id": 47,
+    "title": "触不可及 - Intouchables",
+    "score": 8.9,
+    "categories": "剧情, 喜剧",
+    "country": "法国",
+    "runtime": "112 分钟",
+    "release_date": "2011-11-02",
+    "poster": "https://p1.meituan.net/movie/1e700e53e4fe29dd5942381bb353c8532239179.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/47"
+  },
+  {
+    "id": 48,
+    "title": "钢琴家 - The Pianist",
+    "score": 8.9,
+    "categories": "剧情, 音乐, 传记, 历史, 战争",
+    "country": "法国、德国、英国、波兰",
+    "runtime": "150 分钟",
+    "release_date": "2002-05-24",
+    "poster": "https://p0.meituan.net/movie/bcbe59fc51580317adf94537a61a1a26142090.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/48"
+  },
+  {
+    "id": 49,
+    "title": "本杰明·巴顿奇事 - The Curious Case of Benjamin Button",
+    "score": 8.9,
+    "categories": "剧情, 爱情, 奇幻",
+    "country": "美国",
+    "runtime": "166 分钟",
+    "release_date": "2008-12-25",
+    "poster": "https://p0.meituan.net/movie/2526f77c650bf7cf3d5ee2dccdeac332244951.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/49"
+  },
+  {
+    "id": 50,
+    "title": "倩女幽魂 - A Chinese Ghost Story",
+    "score": 8.9,
+    "categories": "爱情, 奇幻, 武侠, 古装",
+    "country": "中国香港",
+    "runtime": "98 分钟",
+    "release_date": "2011-04-30",
+    "poster": "https://p1.meituan.net/movie/96d98200d2afb4b87ff189f9c15b6545568339.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/50"
+  },
+  {
+    "id": 51,
+    "title": "哈利·波特与死亡圣器（下） - Harry Potter and the Deathly Hallows: Part 2",
+    "score": 8.9,
+    "categories": "剧情, 悬疑, 奇幻, 冒险",
+    "country": "英国、美国",
+    "runtime": "130 分钟",
+    "release_date": "2011-08-04",
+    "poster": "https://p1.meituan.net/movie/bb0eca029cd25329776a4549b3fbe262924727.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/51"
+  },
+  {
+    "id": 52,
+    "title": "甜蜜蜜 - Comrades: Almost a Love Story",
+    "score": 8.9,
+    "categories": "剧情, 爱情",
+    "country": "中国香港",
+    "runtime": "118 分钟",
+    "release_date": "2015-02-13",
+    "poster": "https://p1.meituan.net/movie/0b0d45b58946078dd24d4945dd6be3b51329411.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/52"
+  },
+  {
+    "id": 53,
+    "title": "蝙蝠侠：黑暗骑士崛起 - The Dark Knight Rises",
+    "score": 8.9,
+    "categories": "剧情, 动作, 科幻, 惊悚, 犯罪",
+    "country": "美国、英国",
+    "runtime": "165 分钟",
+    "release_date": "2012-08-27",
+    "poster": "https://p0.meituan.net/movie/f7f4b4099773268f8290ed033f49dc01377512.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/53"
+  },
+  {
+    "id": 54,
+    "title": "鬼子来了 - Devils on the Doorstep",
+    "score": 8.8,
+    "categories": "剧情, 战争",
+    "country": "中国大陆",
+    "runtime": "139 分钟",
+    "release_date": "2000-05-13",
+    "poster": "https://p0.meituan.net/movie/34f9202c5e823f490ffec4c69d5d0028137395.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/54"
+  },
+  {
+    "id": 55,
+    "title": "无敌破坏王 - Wreck-It Ralph",
+    "score": 8.8,
+    "categories": "喜剧, 动画, 奇幻, 冒险",
+    "country": "美国",
+    "runtime": "101 分钟",
+    "release_date": "2012-11-06",
+    "poster": "https://p1.meituan.net/movie/70a574550c4bb928dcc6a40641294785150838.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/55"
+  },
+  {
+    "id": 56,
+    "title": "致命魔术 - The Prestige",
+    "score": 8.8,
+    "categories": "剧情, 悬疑, 惊悚",
+    "country": "美国、英国",
+    "runtime": "130 分钟",
+    "release_date": "2006-10-17",
+    "poster": "https://p0.meituan.net/movie/83df1c541e6e0696e67ce7da81cb1e1a251258.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/56"
+  },
+  {
+    "id": 57,
+    "title": "神偷奶爸 - Despicable Me",
+    "score": 8.8,
+    "categories": "喜剧, 动画, 冒险",
+    "country": "美国、法国",
+    "runtime": "95 分钟",
+    "release_date": "2010-06-20",
+    "poster": "https://p0.meituan.net/movie/85c2bfba6025bfbfb53291ae5924c215308805.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/57"
+  },
+  {
+    "id": 58,
+    "title": "断背山 - Brokeback Mountain",
+    "score": 8.8,
+    "categories": "剧情, 爱情, 家庭",
+    "country": "美国、加拿大",
+    "runtime": "134 分钟",
+    "release_date": "2005-09-02",
+    "poster": "https://p0.meituan.net/movie/e71affe126eeb4f8bfcc738cbddeebc8288766.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/58"
+  },
+  {
+    "id": 59,
+    "title": "怦然心动 - Flipped",
+    "score": 8.8,
+    "categories": "剧情, 喜剧, 爱情",
+    "country": "美国",
+    "runtime": "90 分钟",
+    "release_date": "2010-07-26",
+    "poster": "https://p0.meituan.net/movie/15f1ac49b6d1ff7b71207672993ed6901536456.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/59"
+  },
+  {
+    "id": 60,
+    "title": "驯龙高手 - How to Train Your Dragon",
+    "score": 8.8,
+    "categories": "喜剧, 动画, 奇幻, 冒险",
+    "country": "美国",
+    "runtime": "98 分钟",
+    "release_date": "2010-05-14",
+    "poster": "https://p0.meituan.net/movie/b0d97e4158b47d653d7a81d66f7dd3092146907.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/60"
+  },
+  {
+    "id": 61,
+    "title": "飞屋环游记 - Up",
+    "score": 8.8,
+    "categories": "剧情, 喜剧, 动画, 冒险",
+    "country": "美国",
+    "runtime": "96 分钟",
+    "release_date": "2009-08-04",
+    "poster": "https://p0.meituan.net/movie/f9356a376358f1576da3263d998eca7a94624.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/61"
+  },
+  {
+    "id": 62,
+    "title": "黑客帝国3：矩阵革命 - The Matrix Revolutions",
+    "score": 8.8,
+    "categories": "动作, 科幻",
+    "country": "美国、澳大利亚",
+    "runtime": "129 分钟",
+    "release_date": "2003-11-05",
+    "poster": "https://p0.meituan.net/movie/2e383b5f5f306f10f9f26d9f1c28cf1d825537.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/62"
+  },
+  {
+    "id": 63,
+    "title": "速度与激情5 - Fast Five",
+    "score": 8.9,
+    "categories": "动作, 犯罪",
+    "country": "美国",
+    "runtime": "130 分钟",
+    "release_date": "2011-05-12",
+    "poster": "https://p0.meituan.net/movie/845ce32778a1b3f258de089f91a3979b5766154.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/63"
+  },
+  {
+    "id": 64,
+    "title": "勇敢的心 - Braveheart",
+    "score": 8.9,
+    "categories": "剧情, 动作, 传记, 历史, 战争",
+    "country": "美国",
+    "runtime": "177 分钟",
+    "release_date": "1995-05-18",
+    "poster": "https://p1.meituan.net/movie/f8e9d5a90224746d15dfdbd53d4fae3d209420.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/64"
+  },
+  {
+    "id": 65,
+    "title": "三傻大闹宝莱坞 - 3 Idiots",
+    "score": 8.9,
+    "categories": "剧情, 喜剧, 爱情, 歌舞",
+    "country": "印度",
+    "runtime": "171 分钟",
+    "release_date": "2011-12-08",
+    "poster": "https://p1.meituan.net/movie/ca4a128a5a54d5b5e35ceba622636c831810197.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/65"
+  },
+  {
+    "id": 66,
+    "title": "闻香识女人 - Scent of a Woman",
+    "score": 8.9,
+    "categories": "剧情",
+    "country": "美国",
+    "runtime": "157 分钟",
+    "release_date": "1992-12-23",
+    "poster": "https://p1.meituan.net/movie/8d7b0b902afd4ec1a3dd7a9c6149463c187734.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/66"
+  },
+  {
+    "id": 67,
+    "title": "末代皇帝 - The Last Emperor",
+    "score": 8.9,
+    "categories": "剧情, 传记, 历史",
+    "country": "英国、意大利、中国大陆、法国、美国",
+    "runtime": "163 分钟",
+    "release_date": "1987-10-23",
+    "poster": "https://p1.meituan.net/movie/21b9211eb1094af360842472018db634286646.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/67"
+  },
+  {
+    "id": 68,
+    "title": "风之谷 - 風の谷のナウシカ",
+    "score": 8.9,
+    "categories": "动画, 奇幻, 冒险",
+    "country": "日本",
+    "runtime": "117 分钟",
+    "release_date": "",
+    "poster": "https://p0.meituan.net/movie/4f9638ba234c3fb673f23a09968db875371576.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/68"
+  },
+  {
+    "id": 69,
+    "title": "大话西游之月光宝盒 - A Chinese Odyssey",
+    "score": 8.9,
+    "categories": "喜剧, 爱情, 奇幻, 古装",
+    "country": "中国香港、中国大陆",
+    "runtime": "87 分钟",
+    "release_date": "2014-10-24",
+    "poster": "https://p0.meituan.net/movie/396266d8b711958841b3536a3fa7b868211445.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/69"
+  },
+  {
+    "id": 70,
+    "title": "放牛班的春天 - Les choristes",
+    "score": 8.9,
+    "categories": "剧情, 音乐",
+    "country": "法国、德国、瑞士",
+    "runtime": "97 分钟",
+    "release_date": "2004-10-16",
+    "poster": "https://p0.meituan.net/movie/70de97ebb6b5251ecb7c3f6d7a782a7f189340.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/70"
+  },
+  {
+    "id": 71,
+    "title": "当幸福来敲门 - The Pursuit of Happyness",
+    "score": 8.9,
+    "categories": "剧情, 家庭, 传记",
+    "country": "美国",
+    "runtime": "117 分钟",
+    "release_date": "2008-01-17",
+    "poster": "https://p1.meituan.net/movie/7d1d85610651dbe1c8687781a87d1008184950.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/71"
+  },
+  {
+    "id": 72,
+    "title": "幽灵公主 - もののけ姫",
+    "score": 8.9,
+    "categories": "动画, 奇幻, 冒险",
+    "country": "日本",
+    "runtime": "134 分钟",
+    "release_date": "1998-05-01",
+    "poster": "https://p0.meituan.net/movie/a08f65e6cb50fab32df5da69ff116f593095363.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/72"
+  },
+  {
+    "id": 73,
+    "title": "十二怒汉 - 12 Angry Men",
+    "score": 8.9,
+    "categories": "剧情",
+    "country": "美国",
+    "runtime": "96 分钟",
+    "release_date": "1957-04-13",
+    "poster": "https://p0.meituan.net/movie/df15efd261060d3094a73ef679888d4f238149.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/73"
+  },
+  {
+    "id": 74,
+    "title": "搏击俱乐部 - Fight Club",
+    "score": 8.9,
+    "categories": "剧情, 动作, 悬疑, 惊悚",
+    "country": "美国、德国",
+    "runtime": "139 分钟",
+    "release_date": "1999-09-10",
+    "poster": "https://p0.meituan.net/movie/b3defc07dfaa1b6f5b74852ce38a3f8f242792.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/74"
+  },
+  {
+    "id": 75,
+    "title": "疯狂原始人 - The Croods",
+    "score": 8.9,
+    "categories": "喜剧, 动画, 冒险",
+    "country": "美国",
+    "runtime": "98 分钟",
+    "release_date": "2013-04-20",
+    "poster": "https://p1.meituan.net/movie/bc022b86345c643ca21d759166f77a553679589.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/75"
+  },
+  {
+    "id": 76,
+    "title": "阿凡达 - Avatar",
+    "score": 8.9,
+    "categories": "动作, 科幻, 冒险",
+    "country": "美国、英国",
+    "runtime": "162 分钟",
+    "release_date": "2010-01-04",
+    "poster": "https://p1.meituan.net/movie/e540384dc6c9f63bdb27cc554588a77f44305.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/76"
+  },
+  {
+    "id": 77,
+    "title": "哈尔的移动城堡 - ハウルの動く城",
+    "score": 8.9,
+    "categories": "动画, 奇幻, 冒险",
+    "country": "日本",
+    "runtime": "119 分钟",
+    "release_date": "2004-09-05",
+    "poster": "https://p0.meituan.net/movie/0127b451d5b8f0679c6f81c8ed414bb2432442.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/77"
+  },
+  {
+    "id": 78,
+    "title": "盗梦空间 - Inception",
+    "score": 8.9,
+    "categories": "剧情, 科幻, 悬疑, 冒险",
+    "country": "美国、英国",
+    "runtime": "148 分钟",
+    "release_date": "2010-09-01",
+    "poster": "https://p1.meituan.net/movie/d40efe1183f29d5900f5c60be3c8a89d339225.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/78"
+  },
+  {
+    "id": 79,
+    "title": "忠犬八公的故事 - Hachi: A Dog's Tale",
+    "score": 8.9,
+    "categories": "剧情",
+    "country": "美国、英国",
+    "runtime": "93 分钟",
+    "release_date": "2009-06-13",
+    "poster": "https://p0.meituan.net/movie/5f0a709378d6b567807aa9685610f818282136.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/79"
+  },
+  {
+    "id": 80,
+    "title": "拯救大兵瑞恩 - Saving Private Ryan",
+    "score": 8.9,
+    "categories": "剧情, 历史, 战争",
+    "country": "美国",
+    "runtime": "169 分钟",
+    "release_date": "1998-11-13",
+    "poster": "https://p1.meituan.net/movie/a2a287c77415dc1f85b04d288f7d63ab1089754.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/80"
+  },
+  {
+    "id": 81,
+    "title": "活着 - To Live",
+    "score": 9.0,
+    "categories": "剧情, 家庭, 历史",
+    "country": "中国大陆、中国香港",
+    "runtime": "132 分钟",
+    "release_date": "1994-05-17",
+    "poster": "https://p0.meituan.net/movie/4c41068ef7608c1d4fbfbe6016e589f7204391.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/81"
+  },
+  {
+    "id": 82,
+    "title": "机器人总动员 - WALL·E",
+    "score": 9.0,
+    "categories": "喜剧, 科幻, 动画",
+    "country": "美国",
+    "runtime": "98 分钟",
+    "release_date": "2008-06-27",
+    "poster": "https://p0.meituan.net/movie/267dd2483f0fb57081474c00fbea38451415571.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/82"
+  },
+  {
+    "id": 83,
+    "title": "天堂电影院 - Nuovo Cinema Paradiso",
+    "score": 9.0,
+    "categories": "剧情, 爱情",
+    "country": "意大利、法国",
+    "runtime": "155 分钟",
+    "release_date": "1988-11-17",
+    "poster": "https://p0.meituan.net/movie/76fc92cfa6c8f2959431b8aa604ef7ae126414.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/83"
+  },
+  {
+    "id": 84,
+    "title": "指环王2：双塔奇兵 - The Lord of the Rings: The Two Towers",
+    "score": 9.0,
+    "categories": "剧情, 动作, 奇幻, 冒险",
+    "country": "美国、新西兰",
+    "runtime": "179 分钟",
+    "release_date": "2003-04-25",
+    "poster": "https://p0.meituan.net/movie/02bb9fd161c05bad6089133098efcdb5546589.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/84"
+  },
+  {
+    "id": 85,
+    "title": "指环王1：护戒使者 - The Lord of the Rings: The Fellowship of the Ring",
+    "score": 9.0,
+    "categories": "剧情, 动作, 奇幻, 冒险",
+    "country": "新西兰、美国",
+    "runtime": "178 分钟",
+    "release_date": "2002-04-04",
+    "poster": "https://p1.meituan.net/movie/dd08154878aac7c8c649fe3eeb8ccd0a2498277.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/85"
+  },
+  {
+    "id": 86,
+    "title": "射雕英雄传之东成西就 - The Eagle Shooting Heroes",
+    "score": 9.0,
+    "categories": "喜剧, 奇幻, 武侠, 古装",
+    "country": "中国香港",
+    "runtime": "113 分钟",
+    "release_date": "1993-02-05",
+    "poster": "https://p0.meituan.net/movie/86c5190ba1d1236093c13f2fe9ed8dd4150050.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/86"
+  },
+  {
+    "id": 87,
+    "title": "蝙蝠侠：黑暗骑士 - The Dark Knight",
+    "score": 9.0,
+    "categories": "剧情, 动作, 科幻, 惊悚, 犯罪",
+    "country": "美国、英国",
+    "runtime": "152 分钟",
+    "release_date": "2008-07-14",
+    "poster": "https://p0.meituan.net/movie/09658109acfea0e248a63932337d8e6a4268980.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/87"
+  },
+  {
+    "id": 88,
+    "title": "无间道 - Infernal Affairs",
+    "score": 9.0,
+    "categories": "剧情, 悬疑, 犯罪",
+    "country": "中国香港",
+    "runtime": "101 分钟",
+    "release_date": "2003-09-05",
+    "poster": "https://p0.meituan.net/movie/606de8f394d40dbcbb9b87943fec71a2130408.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/88"
+  },
+  {
+    "id": 89,
+    "title": "教父2 - The Godfather: Part Ⅱ",
+    "score": 9.0,
+    "categories": "剧情, 犯罪",
+    "country": "美国",
+    "runtime": "202 分钟",
+    "release_date": "1974-12-12",
+    "poster": "https://p0.meituan.net/movie/bb1dee5e0b25889a2410211c1d5010ae190824.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/89"
+  },
+  {
+    "id": 90,
+    "title": "加勒比海盗 - Pirates of the Caribbean: The Curse of the Black Pearl",
+    "score": 9.0,
+    "categories": "动作, 奇幻, 冒险",
+    "country": "美国",
+    "runtime": "143 分钟",
+    "release_date": "2003-11-21",
+    "poster": "https://p0.meituan.net/movie/b05b94b28eca53f325ae8d807fcd4ce01798036.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/90"
+  },
+  {
+    "id": 91,
+    "title": "哈利·波特与魔法石 - Harry Potter and the Sorcerer's Stone",
+    "score": 9.0,
+    "categories": "奇幻, 冒险",
+    "country": "美国、英国",
+    "runtime": "152 分钟",
+    "release_date": "2002-01-26",
+    "poster": "https://p0.meituan.net/movie/d66b56b77b55aa3da5987b68948444c9106742.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/91"
+  },
+  {
+    "id": 92,
+    "title": "指环王3：王者无敌 - The Lord of the Rings: The Return of the King",
+    "score": 9.0,
+    "categories": "剧情, 动作, 奇幻, 冒险",
+    "country": "美国、新西兰",
+    "runtime": "201 分钟",
+    "release_date": "2004-03-15",
+    "poster": "https://p0.meituan.net/movie/932bdfbef5be3543e6b136246aeb99b8123736.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/92"
+  },
+  {
+    "id": 93,
+    "title": "黑客帝国 - The Matrix",
+    "score": 9.0,
+    "categories": "动作, 科幻",
+    "country": "美国、澳大利亚",
+    "runtime": "136 分钟",
+    "release_date": "2000-01-14",
+    "poster": "https://p1.meituan.net/movie/ad974d3527879f00be2eec29135118163728582.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/93"
+  },
+  {
+    "id": 94,
+    "title": "剪刀手爱德华 - Edward Scissorhands",
+    "score": 9.0,
+    "categories": "剧情, 爱情, 奇幻",
+    "country": "美国",
+    "runtime": "105 分钟",
+    "release_date": "1990-12-06",
+    "poster": "https://p1.meituan.net/movie/6a964e9cee699267053bd6a4bf6f2671195394.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/94"
+  },
+  {
+    "id": 95,
+    "title": "春光乍泄 - Happy Together",
+    "score": 9.0,
+    "categories": "剧情, 爱情",
+    "country": "中国香港、日本、韩国",
+    "runtime": "96 分钟",
+    "release_date": "1997-05-17",
+    "poster": "https://p0.meituan.net/movie/ae7245920d95c03765fe1615f3a1fe3865785.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/95"
+  },
+  {
+    "id": 96,
+    "title": "大闹天宫 - The Monkey King",
+    "score": 9.0,
+    "categories": "动画, 奇幻",
+    "country": "中国大陆",
+    "runtime": "114 分钟",
+    "release_date": "1965-12-31",
+    "poster": "https://p1.meituan.net/movie/14a7b337e8063e3ce05a5993ed80176b74208.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/96"
+  },
+  {
+    "id": 97,
+    "title": "天空之城 - 天空の城ラピュタ",
+    "score": 9.0,
+    "categories": "动画, 奇幻, 冒险",
+    "country": "日本",
+    "runtime": "125 分钟",
+    "release_date": "1992-05-01",
+    "poster": "https://p1.meituan.net/movie/ba1ed511668402605ed369350ab779d6319397.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/97"
+  },
+  {
+    "id": 98,
+    "title": "音乐之声 - The Sound of Music",
+    "score": 9.0,
+    "categories": "剧情, 爱情, 歌舞, 传记",
+    "country": "美国",
+    "runtime": "174 分钟",
+    "release_date": "1965-03-02",
+    "poster": "https://p0.meituan.net/movie/ef6d7e040278f3d727306745e8df1af5246411.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/98"
+  },
+  {
+    "id": 99,
+    "title": "辛德勒的名单 - Schindler's List",
+    "score": 9.5,
+    "categories": "剧情, 历史, 战争",
+    "country": "美国",
+    "runtime": "195 分钟",
+    "release_date": "1993-11-30",
+    "poster": "https://p0.meituan.net/movie/b0d986a8bf89278afbb19f6abaef70f31206570.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/99"
+  },
+  {
+    "id": 100,
+    "title": "魂断蓝桥 - Waterloo Bridge",
+    "score": 9.5,
+    "categories": "剧情, 爱情, 战争",
+    "country": "美国",
+    "runtime": "108 分钟",
+    "release_date": "1940-05-17",
+    "poster": "https://p0.meituan.net/movie/58782fa5439c25d764713f711ebecd1e201941.jpg@464w_644h_1e_1c",
+    "url": "https://ssr1.scrape.center/detail/100"
+  }
+];
+
+    // Semantic Intent Matrix Config
+    const intentKeywords = {
+      sadness: {
+        words: ["想哭", "哭", "悲傷", "難過", "感人", "眼淚", "虐心", "催淚", "悲劇", "抑鬱", "治癒", "感動", "痛哭", "流淚", "感傷"],
+        category: "剧情",
+        reply: "為您挑選了幾部極具情感張力、感人至深的經典劇情神作，準備好面紙喔... 😢"
+      },
+      romance: {
+        words: ["愛情", "戀愛", "浪漫", "情侶", "甜蜜", "相愛", "初戀", "約會", "虐戀", "分開", "真愛", "閃光", "心動", "羅曼史"],
+        category: "爱情",
+        reply: "浪漫微甜！為您精選浪漫動人的愛情經典，讓您感受愛情的酸甜苦辣... 🍿❤️"
+      },
+      action: {
+        words: ["刺激", "打架", "爽片", "熱血", "動作", "犯罪", "槍戰", "爆破", "打鬥", "警匪", "黑幫", "格鬥", "極速", "冒險", "打殺"],
+        category: "动作",
+        reply: "腎上腺素飆升時間！為您推薦爽度破表、打鬥刺激的動作與犯罪大片... 🥋💥"
+      },
+      comedy: {
+        words: ["搞笑", "喜劇", "幽默", "爆笑", "開懷大笑", "歡樂", "放鬆", "開心", "有趣", "無厘頭", "笑死", "笑話"],
+        category: "喜剧",
+        reply: "想放鬆一下？這幾部經典喜劇絕對能讓您捧腹大笑、忘卻煩惱... 🎭😂"
+      },
+      scifi: {
+        words: ["科幻", "宇宙", "未來", "外星人", "末日", "時空旅行", "平行宇宙", "機器人", "高科技", "AI", "人工智慧"],
+        category: "科幻",
+        reply: "探索未知的世界！這幾部科幻神作帶您穿梭時空、探索浩瀚宇宙... 🧠🚀"
+      },
+      suspense: {
+        words: ["懸疑", "燒腦", "推理", "解謎", "驚悚", "恐怖", "反轉", "心理", "智商", "暗黑", "密室", "謀殺", "鬼片", "嚇人"],
+        category: "悬疑",
+        reply: "準備好您的腦細胞！這幾部高分懸疑驚悚神作，劇情反轉再反轉... 🧠🔍"
+      },
+      animation: {
+        words: ["動畫", "卡通", "宮崎駿", "吉卜力", "童年", "溫馨", "繪本", "龍貓", "千尋", "動漫"],
+        category: "动画",
+        reply: "帶您走進充滿奇幻與童真的世界，精選經典動畫作品... 🎨✨"
+      },
+      war: {
+        words: ["戰爭", "歷史", "和平", "軍事", "二戰", "史詩", "納粹", "將軍", "士兵"],
+        category: "战争",
+        reply: "歷史的迴響與人性的光輝，為您推薦震撼人心的史詩戰爭大片... 🎖️"
+      }
+    };
+
+    // Handle Quick Reply Action Button Click
+    function handleQuickAction(actionText) {
+      appendUserMessage(actionText);
+      
+      if (actionText === "🍿 盲盒抽片") {
+        triggerBlindBox();
+      } else if (actionText === "🔥 9.5分神作") {
+        triggerHighScores();
+      } else if (actionText.includes("浪漫愛情")) {
+        triggerSemanticMatch("浪漫愛情", "romance");
+      } else if (actionText.includes("熱血動作")) {
+        triggerSemanticMatch("熱血動作", "action");
+      } else if (actionText.includes("燒腦懸疑")) {
+        triggerSemanticMatch("燒腦懸疑", "suspense");
+      } else if (actionText.includes("催淚劇情")) {
+        triggerSemanticMatch("催淚劇情", "sadness");
+      }
+    }
+
+    // Main trigger function for users sending input
+    function sendMessage() {
+      const inputEl = document.getElementById("user-input");
+      const text = inputEl.value.trim();
+      if (!text) return;
+      
+      appendUserMessage(text);
+      inputEl.value = "";
+      
+      // Parse User Intent
+      processBotResponse(text);
+    }
+
+    // Add user bubble to chat logs
+    function appendUserMessage(text) {
+      const chatLogs = document.getElementById("chat-logs");
+      const userMsgHtml = `
+        <div class="flex space-x-3 max-w-[85%] ml-auto justify-end">
+          <div class="space-y-1 text-right">
+            <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">YOU</span>
+            <div class="px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 border border-cyan-500/20 rounded-2xl rounded-tr-none text-sm text-cyan-50 leading-relaxed shadow-md">
+              \${escapeHtml(text)}
+            </div>
+          </div>
+          <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-lg">👤</div>
+        </div>
+      `;
+      chatLogs.insertAdjacentHTML('beforeend', userMsgHtml);
+      scrollToBottom();
+    }
+
+    // Escaping helper to prevent XSS
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Auto scroll chat list smoothly
+    function scrollToBottom() {
+      const chatLogs = document.getElementById("chat-logs");
+      chatLogs.scrollTo({
+        top: chatLogs.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    // Create and append a Typing Loader bubble
+    function createTypingIndicator() {
+      const chatLogs = document.getElementById("chat-logs");
+      const indicatorId = "typing-" + Date.now();
+      const indicatorHtml = `
+        <div id="\${indicatorId}" class="flex space-x-3 max-w-[85%] animate-fade-in-up">
+          <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
+          <div class="space-y-1">
+            <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
+            <div class="flex items-center space-x-1.5 px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 shadow-md w-20">
+              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 0ms"></span>
+              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 150ms"></span>
+              <span class="w-2.5 h-2.5 bg-[#ff6b00] rounded-full animate-bounce" style="animation-duration: 0.8s; animation-delay: 300ms"></span>
+            </div>
+          </div>
+        </div>
+      `;
+      chatLogs.insertAdjacentHTML('beforeend', indicatorHtml);
+      scrollToBottom();
+      return indicatorId;
+    }
+
+    // Remove Typing Indicator
+    function removeTypingIndicator(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    // Simulate Typewriter text printing, and then load movie cards
+    function simulateTypewriterResponse(introText, moviesList) {
+      const typingId = createTypingIndicator();
+      
+      // Delay to represent thinking
+      setTimeout(() => {
+        removeTypingIndicator(typingId);
+        
+        const chatLogs = document.getElementById("chat-logs");
+        const uniqueMsgId = "msg-" + Date.now();
+        
+        // Append response scaffold
+        const botMsgHtml = `
+          <div class="flex space-x-3 max-w-[85%] animate-fade-in-up">
+            <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">🤖</div>
+            <div class="space-y-2 flex-1">
+              <span class="text-[11px] text-slate-400 block font-semibold tracking-wider">MOVIEMIND BOT</span>
+              <div id="\${uniqueMsgId}-text" class="px-4 py-3 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed text-slate-200 shadow-md inline-block font-medium"></div>
+              <div id="\${uniqueMsgId}-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 hidden"></div>
+            </div>
+          </div>
+        `;
+        chatLogs.insertAdjacentHTML('beforeend', botMsgHtml);
+        
+        const textContainer = document.getElementById(`\${uniqueMsgId}-text`);
+        const cardsContainer = document.getElementById(`\${uniqueMsgId}-cards`);
+        
+        // Typewriter simulation
+        let charIndex = 0;
+        const typingSpeed = 15; // ms per char
+        
+        function type() {
+          if (charIndex < introText.length) {
+            textContainer.innerHTML += introText.charAt(charIndex);
+            charIndex++;
+            scrollToBottom();
+            setTimeout(type, typingSpeed);
+          } else {
+            // Typing finished, show movie cards
+            if (moviesList && moviesList.length > 0) {
+              renderMovieCards(cardsContainer, moviesList);
+            }
+          }
+        }
+        
+        type();
+      }, 500);
+    }
+
+    // Generate Card HTML and render into container
+    function renderMovieCards(container, movies) {
+      container.classList.remove('hidden');
+      
+      movies.forEach((movie, i) => {
+        // Generate Star Rating HTML
+        const starCount = Math.min(5, Math.max(1, Math.round(movie.score / 2)));
+        let starsHtml = "";
+        for (let s = 0; s < 5; s++) {
+          if (s < starCount) {
+            starsHtml += "<span class='text-amber-400'>★</span>";
+          } else {
+            starsHtml += "<span class='text-slate-600'>★</span>";
+          }
+        }
+
+        // Categories list conversion
+        const categoryBadges = movie.categories.split(',')
+          .map(cat => `<span class="bg-white/5 border border-white/10 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-medium">\${cat.trim()}</span>`)
+          .join(" ");
+
+        const cardHtml = `
+          <div class="glass-card rounded-2xl overflow-hidden flex flex-col h-full animate-fade-in-up" style="animation-delay: \${i * 120}ms">
+            <!-- Movie Poster with Elegant Skeleton Loader -->
+            <div class="relative h-44 overflow-hidden bg-slate-900 group">
+              <!-- Animated loading indicator behind cover -->
+              <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse"></div>
+              
+              <img src="\${movie.poster}" alt="\${movie.title}" 
+                   class="w-full h-full object-cover relative z-10 transition-all duration-700 ease-out group-hover:scale-105 opacity-0"
+                   onload="this.classList.remove('opacity-0'); this.classList.add('opacity-100');"
+                   onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop'; this.classList.remove('opacity-0'); this.classList.add('opacity-100');">
+              
+              <!-- Top Score Overlay Tag -->
+              <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-lg text-xs font-bold flex items-center space-x-1">
+                <span class="text-amber-400 font-bold">\${movie.score.toFixed(1)}</span>
+              </div>
+            </div>
+            
+            <!-- Movie Info Content -->
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3.5">
+              <div class="space-y-2">
+                <h3 class="font-title font-bold text-sm text-slate-100 line-clamp-1 group-hover:text-cyan-400 transition-colors" title="\${movie.title}">
+                  \${movie.title}
+                </h3>
+                
+                <!-- Stars and basic meta -->
+                <div class="flex items-center space-x-2 text-xs">
+                  <div class="flex space-x-0.5 text-[13px]">\${starsHtml}</div>
+                  <span class="text-slate-500">|</span>
+                  <span class="text-slate-400 font-medium">\${movie.runtime}</span>
+                </div>
+
+                <!-- Genre Badges -->
+                <div class="flex flex-wrap gap-1 mt-1">\${categoryBadges}</div>
+              </div>
+              
+              <!-- Bottom Metadata and Button -->
+              <div class="pt-2 border-t border-white/5 flex items-center justify-between mt-auto">
+                <span class="text-[10px] text-slate-500 font-medium tracking-wide uppercase truncate max-w-[120px]" title="\${movie.country}">
+                  🌍 \${movie.country}
+                </span>
+                
+                <a href="\${movie.url}" target="_blank" 
+                   class="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/30 hover:border-cyan-400/50 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center space-x-1 shadow-sm">
+                  <span>查看詳情</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', cardHtml);
+      });
+      
+      // Force smooth scroll after cards appear
+      setTimeout(scrollToBottom, 150);
+    }
+
+    // Trigger random Blind Box movie selection
+    function triggerBlindBox() {
+      const waitingPrompts = [
+        "正在從 100 部神作中為您盲抽... 🍿",
+        "神秘大獎抽選中，正在過濾經典佳作... 🔮",
+        "影碟滾動中... 正在隨機選取一部您不能錯過的神片... 🎬"
+      ];
+      
+      const randomPrompt = waitingPrompts[Math.floor(Math.random() * waitingPrompts.length)];
+      const typingId = createTypingIndicator();
+      
+      // Delay for 1 second suspense
+      setTimeout(() => {
+        removeTypingIndicator(typingId);
+        
+        // Pick one completely random movie
+        const randomIndex = Math.floor(Math.random() * movieData.length);
+        const selectedMovie = movieData[randomIndex];
+        
+        const introText = `🎉 恭喜！盲盒為您抽中了第 \${selectedMovie.id} 號神作：<b>《\${selectedMovie.title.split(' - ')[0]}》</b>！這部影片的評分高達 \${selectedMovie.score} 分。祝您觀影愉快！`;
+        
+        simulateTypewriterResponse(introText, [selectedMovie]);
+      }, 1000);
+    }
+
+    // Trigger high scores recommendation
+    function triggerHighScores() {
+      // Filter score >= 9.5
+      const highScores = movieData.filter(m => m.score >= 9.5);
+      
+      // Randomly pick 4 from the list of 9.5+ movies
+      const selected = [];
+      const tempArray = [...highScores];
+      for (let i = 0; i < 4 && tempArray.length > 0; i++) {
+        const idx = Math.floor(Math.random() * tempArray.length);
+        selected.push(tempArray.splice(idx, 1)[0]);
+      }
+
+      const introText = `🔥 這些是評分高達 9.5 分以上的影史傳奇級神作！每一部都是無懈可擊的藝術殿堂經典，為您推薦以下佳作：`;
+      simulateTypewriterResponse(introText, selected);
+    }
+
+    // Trigger recommendation based on specific intent
+    function triggerSemanticMatch(queryText, intentKey) {
+      const intent = intentKeywords[intentKey];
+      const matchedMovies = movieData.filter(m => m.categories.includes(intent.category));
+      
+      // Get top scores, pick 4 random top movies to vary results
+      matchedMovies.sort((a, b) => b.score - a.score);
+      const topMovies = matchedMovies.slice(0, 15);
+      
+      const selected = [];
+      const tempArray = [...topMovies];
+      for (let i = 0; i < 4 && tempArray.length > 0; i++) {
+        const idx = Math.floor(Math.random() * tempArray.length);
+        selected.push(tempArray.splice(idx, 1)[0]);
+      }
+
+      simulateTypewriterResponse(intent.reply, selected);
+    }
+
+    // Process Bot Semantic Response for user text
+    function processBotResponse(rawText) {
+      const query = rawText.toLowerCase().trim();
+      
+      // 1. Check for specific categories / intents first
+      let matchedIntentKey = null;
+      let highestMatchCount = 0;
+      
+      for (const [key, config] of Object.entries(intentKeywords)) {
+        let count = 0;
+        config.words.forEach(w => {
+          if (query.includes(w)) count++;
+        });
+        
+        if (count > highestMatchCount) {
+          highestMatchCount = count;
+          matchedIntentKey = key;
+        }
+      }
+      
+      if (matchedIntentKey && highestMatchCount > 0) {
+        triggerSemanticMatch(rawText, matchedIntentKey);
+        return;
+      }
+
+      // 2. Failsafe: Fuzzy text searching on Title, Category, Country
+      const fuzzyMatches = movieData.filter(m => {
+        return m.title.toLowerCase().includes(query) || 
+               m.categories.toLowerCase().includes(query) ||
+               m.country.toLowerCase().includes(query) ||
+               (m.release_date && m.release_date.includes(query));
+      });
+
+      if (fuzzyMatches.length > 0) {
+        // Sort by score
+        fuzzyMatches.sort((a, b) => b.score - a.score);
+        
+        // Pick up to 4 movies
+        const selected = fuzzyMatches.slice(0, 4);
+        const introText = `🔍 我在 100 部神作中為您找到了 \${fuzzyMatches.length} 部與「\${rawText}」相關的影片！為您推薦評分最高的幾部：`;
+        simulateTypewriterResponse(introText, selected);
+      } else {
+        // 3. Fallback: No matches found
+        const fallbackText = `抱歉，我沒有在我們的 100 部神作中找到與『\${rawText}』直接相關的電影。這可能是個冷門佳作，或者超出了我的資料庫範圍！<br><br>不過沒關係，您可以點擊下方的 <b>🍿 盲盒抽片</b>，或者讓我推薦幾部 <b>🔥 9.5分神作</b> 喔！`;
+        simulateTypewriterResponse(fallbackText, []);
+      }
+    }
+  </script>
 </body>
 </html>
