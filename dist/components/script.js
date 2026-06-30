@@ -95,7 +95,8 @@ function renderCard(m) {
   const url = m.detail_url || "#";
   return `
     <a href="${url}" target="_blank" class="movie-card" data-movie-id="${m.id}" style="text-decoration:none;color:inherit;display:block;">
-      <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'">
+      <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" 
+           onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22><rect fill=%22%23111827%22 width=%22300%22 height=%22450%22 rx=%228%22/><text fill=%22%236b7280%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>${escapeHtml(title.substring(0,8))}...</text></svg>';"><｜end▁of▁thinking｜>
       <div class="movie-info">
         <div class="movie-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
         <div class="movie-meta">

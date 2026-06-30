@@ -360,7 +360,7 @@
         const url = m.detail_url || m.url || "#";
         cardsHtml += `
           <div class="cb-mcard cb-anim-fade-in" style="animation-delay:${i*100}ms">
-            <div class="cb-mcard-poster"><img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'"></div>
+            <div class="cb-mcard-poster"><img src="${poster}" alt="${escapeHtml(title)}" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2290%22><rect fill=%22%23e5e7eb%22 width=%2260%22 height=%2290%22/><text fill=%22%239ca3af%22 font-size=%228%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No Img</text></svg>'"></div>
             <div class="cb-mcard-info">
               <div class="cb-mcard-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
               <div class="cb-mcard-row"><span class="cb-mcard-stars">${stars}</span><span class="cb-mcard-score">${Number(score).toFixed(1)}</span></div>
@@ -598,7 +598,7 @@
           返回
         </button>
         <div class="cb-detail-poster">
-          <img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'">
+          <img src="${poster}" alt="${escapeHtml(title)}" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22><rect fill=%22%23e5e7eb%22 width=%22300%22 height=%22450%22 rx=%2214%22/><text fill=%22%239ca3af%22 font-family=%22sans-serif%22 font-size=%2216%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No Poster</text></svg>'">
         </div>
         <h2 class="cb-detail-title">${escapeHtml(title)}</h2>
         ${enTitle ? `<p class="cb-detail-en">${escapeHtml(enTitle)}</p>` : ""}
