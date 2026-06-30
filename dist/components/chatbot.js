@@ -456,7 +456,8 @@
     }
 
     // 2. Parse category from known category list
-    const allCats = [...new Set(movieData.flatMap(m => m.categories||[]))];
+    const allCats = [];
+    movieData.forEach(m => (m.categories||[]).forEach(c => { if (!allCats.includes(c)) allCats.push(c); }));
     const foundCats = allCats.filter(cat => q.includes(cat));
     if (foundCats.length > 0) {
       const prev = filtered.length;
