@@ -1,9 +1,11 @@
 import json
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PROCESSED_PATH = PROJECT_ROOT / "data" / "processed" / "clean_movies_20260630.json"
@@ -11,7 +13,7 @@ PROCESSED_PATH = PROJECT_ROOT / "data" / "processed" / "clean_movies_20260630.js
 with open(PROCESSED_PATH, "r", encoding="utf-8") as f:
     MOVIES = json.load(f)
 
-app = FastAPI(title="Movie Browser")
+app = FastAPI(title="Movie Browser + MovieMind AI Chatbot")
 
 app.mount("/components", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "components")), name="components")
 app.mount("/data", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "data")), name="data")
@@ -37,6 +39,73 @@ def get_movies(sort: str = Query("category", pattern="^(category|date)$")):
         def sort_key(m):
             rd = m.get("release_date_clean", "")
             return rd if rd else "0000-00-00"
-
         sorted_movies = sorted(MOVIES, key=sort_key, reverse=True)
         return {"movies": sorted_movies}
+
+
+# ── Intent configuration ──────────────────────────────────────
+INTENTS = {
+    "sadness":  {"words":["想哭","哭","悲傷","難過","感人","眼淚","虐心","催淚","悲劇","抑鬱","治癒","感動","痛哭","流淚","感傷"], "category":"剧情", "reply":"為您挑選感人至深的經典劇情神作 😢"},
+    "romance":  {"words":["愛情","戀愛","浪漫","情侶","甜蜜","相愛","初戀","約會","真愛","閃光","心動"], "category":"爱情", "reply":"精選浪漫動人的愛情經典 🍿❤️"},
+    "action":   {"words":["刺激","打架","爽片","熱血","動作","犯罪","槍戰","爆破","打鬥","警匪","黑幫","格鬥","冒險","打殺"], "category":"动作", "reply":"腎上腺素飆升的動作大片 🥋💥"},
+    "comedy":   {"words":["搞笑","喜劇","幽默","爆笑","歡樂","放鬆","開心","有趣","無厘頭","笑死"], "category":"喜剧", "reply":"讓您大笑開懷的經典喜劇 🎭😂"},
+    "scifi":    {"words":["科幻","宇宙","未來","外星人","末日","時空","機器人","高科技","AI"], "category":"科幻", "reply":"探索未知的科幻神作 🚀"},
+    "suspense": {"words":["懸疑","燒腦","推理","解謎","驚悚","恐怖","反轉","心理","暗黑","謀殺","嚇人"], "category":"悬疑", "reply":"挑戰腦力的高分懸疑神作 🔍"},
+    "animation":{"words":["動畫","卡通","宮崎駿","吉卜力","童年","溫馨","龍貓","千尋","動漫"], "category":"动画", "reply":"走進奇幻童真的動畫世界 🎨✨"},
+    "war":      {"words":["戰爭","歷史","和平","軍事","二戰","史詩","納粹","將軍","士兵"], "category":"战争", "reply":"震撼人心的史詩戰爭大片 🎖️"},
+}
+
+
+class ChatRequest(BaseModel):
+    message: str
+    top_k: int = 3
+
+
+@app.post("/api/chat")
+def chat_endpoint(req: ChatRequest):
+    msg = req.message.strip().lower()
+    if not msg:
+        return JSONResponse({"reply": "請輸入您的需求", "movies": []})
+
+    # 1. Intent matching
+    best_key, best_count = None, 0
+    for key, cfg in INTENTS.items():
+        count = sum(1 for w in cfg["words"] if w in msg)
+        if count > best_count:
+            best_count = count
+            best_key = key
+
+    if best_key and best_count > 0:
+        cfg = INTENTS[best_key]
+        matched = [m for m in MOVIES if cfg["category"] in ", ".join(m.get("categories", []))]
+        matched.sort(key=lambda m: m.get("score_num", 0), reverse=True)
+        return JSONResponse({"reply": cfg["reply"], "movies": matched[:req.top_k]})
+
+    # 2. Fuzzy search
+    fuzzy = []
+    for m in MOVIES:
+        title = m.get("title", "").lower()
+        cats = ", ".join(m.get("categories", [])).lower()
+        country = m.get("country", "").lower()
+        if msg in title or msg in cats or msg in country:
+            fuzzy.append(m)
+    fuzzy.sort(key=lambda m: m.get("score_num", 0), reverse=True)
+
+    if fuzzy:
+        return JSONResponse({
+            "reply": f"🔍 找到 {len(fuzzy)} 部相關影片，推薦最佳 {min(len(fuzzy), req.top_k)} 部：",
+            "movies": fuzzy[:req.top_k]
+        })
+
+    # 3. Fallback
+    return JSONResponse({
+        "reply": f"抱歉，沒有找到與「{req.message}」相關的電影。<br>試試 🍿 盲盒抽片或 🔥 9.5分神作吧！",
+        "movies": []
+    })
+
+
+# ── Hugging Face Spaces entry ─────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
