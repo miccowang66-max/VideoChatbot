@@ -172,7 +172,7 @@ SCRAPE_HEADERS = {
 
 @app.get("/detail/{movie_id}", response_class=HTMLResponse)
 def proxy_detail(movie_id: int, request: Request):
-    """Proxy the detail page and rewrite image URLs to go through our image proxy."""
+    """Proxy the detail page and rewrite asset/image URLs."""
     try:
         url = f"https://ssr1.scrape.center/detail/{movie_id}"
         resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False)
@@ -180,20 +180,28 @@ def proxy_detail(movie_id: int, request: Request):
         html = resp.text
 
         base = str(request.base_url).rstrip("/")
+        origin = "https://ssr1.scrape.center"
+
+        # Rewrite relative asset URLs to absolute origin
+        html = re.sub(r'(href|src)="/', rf'\1="{origin}/', html)
+        html = re.sub(r"(href|src)='/", rf"\1='{origin}/", html)
+
+        # Rewrite CSS url() for static resources
+        html = re.sub(r'url\(["\']?/([^"\')\s]*\.(?:css|js|png|svg|ico|woff2?|ttf)[^"\')\s]*)["\']?\)',
+                      lambda m: f'url("{origin}/{m.group(1)}")', html)
 
         # Rewrite image src to use our proxy
-        def rewrite_img(m):
-            src = m.group(1)
-            if src.startswith("http"):
-                return f'src="{base}/proxy/image?url={quote(src, safe="")}"'
-            return m.group(0)
+        html = re.sub(r'src="(https?://[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"',
+                      lambda m: f'src="{base}/proxy/image?url={quote(m.group(1), safe="")}"', html)
+        html = re.sub(r"src='(https?://[^']+\.(?:jpg|jpeg|png|webp|gif)[^']*)'",
+                      lambda m: f"src='{base}/proxy/image?url={quote(m.group(1), safe='')}'", html)
 
-        html = re.sub(r'src="(https?://[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"', rewrite_img, html)
-        html = re.sub(r"src='(https?://[^']+\.(?:jpg|jpeg|png|webp|gif)[^']*)'", lambda m: f"src='{base}/proxy/image?url={quote(m.group(1), safe='')}'", html)
-
-        # Rewrite CSS url() references
+        # Rewrite CSS url() image references
         html = re.sub(r'url\(["\']?(https?://[^"\')\s]+\.(?:jpg|jpeg|png|webp|gif)[^"\')\s]*)["\']?\)',
                       lambda m: f'url("{base}/proxy/image?url={quote(m.group(1), safe="")}")', html)
+
+        # Inject <base> tag for relative paths
+        html = html.replace("<head>", f'<head>\n  <base href="{origin}/">', 1)
 
         return HTMLResponse(content=html)
     except Exception as e:
@@ -204,11 +212,14 @@ def proxy_detail(movie_id: int, request: Request):
 def proxy_image(url: str):
     """Proxy individual images to avoid hotlink/blocking."""
     try:
-        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False, stream=True)
+        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=(10, 30), verify=False, stream=True)
         return StreamingResponse(
             resp.iter_content(chunk_size=8192),
             media_type=resp.headers.get("Content-Type", "image/jpeg"),
-            headers={"Cache-Control": "public, max-age=86400"},
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
     except Exception:
         # Return a 1x1 transparent pixel as fallback
