@@ -1,7 +1,10 @@
 import json
 import os
+import re
 from pathlib import Path
 
+import requests
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -102,6 +105,56 @@ def chat_endpoint(req: ChatRequest):
         "reply": f"抱歉，沒有找到與「{req.message}」相關的電影。<br>試試 🍿 盲盒抽片或 🔥 9.5分神作吧！",
         "movies": []
     })
+
+
+# ── Movie detail scraper (director info) ──────────────────────
+DETAIL_CACHE = {}
+
+
+def scrape_detail(movie_id: int) -> dict:
+    if movie_id in DETAIL_CACHE:
+        return DETAIL_CACHE[movie_id]
+
+    result = {"director": ""}
+    try:
+        url = f"https://ssr1.scrape.center/detail/{movie_id}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        resp = requests.get(url, headers=headers, timeout=10, verify=False)
+        resp.encoding = "utf-8"
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        # Extract director from detail page
+        for el in soup.select(".item"):
+            text = el.get_text(strip=True)
+            if "導演" in text or "导演" in text:
+                result["director"] = text.split(":")[-1].split("：")[-1].strip()
+                break
+
+        # Also try director span
+        director_el = soup.select_one(".director") or soup.select_one("[class*='director']")
+        if not result["director"] and director_el:
+            result["director"] = director_el.get_text(strip=True)
+
+        if not result["director"]:
+            for el in soup.select(".el-row"):
+                txt = el.get_text(strip=True)
+                if "導演" in txt:
+                    m = re.search(r"導演[：:]\s*(.+)", txt)
+                    if m:
+                        result["director"] = m.group(1).strip()
+
+    except Exception:
+        pass
+
+    DETAIL_CACHE[movie_id] = result
+    return result
+
+
+@app.get("/api/movie/{movie_id}/detail")
+def movie_detail(movie_id: int):
+    return JSONResponse(scrape_detail(movie_id))
 
 
 # ── Hugging Face Spaces entry ─────────────────────────────────

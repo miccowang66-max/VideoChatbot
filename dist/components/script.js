@@ -111,7 +111,7 @@ function escapeHtml(text) {
 }
 
 // ── Movie Detail Modal ──────────────────────────────────────
-function showMovieDetail(movieId) {
+async function showMovieDetail(movieId) {
   const movie = MOVIES.find(m => m.id === movieId);
   if (!movie) return;
 
@@ -143,6 +143,7 @@ function showMovieDetail(movieId) {
           <div class="modal-row"><span>國家</span><span>${escapeHtml(country)}</span></div>
           <div class="modal-row"><span>片長</span><span>${escapeHtml(runtime)}</span></div>
           <div class="modal-row"><span>上映</span><span>${escapeHtml(release)}</span></div>
+          <div class="modal-row"><span>導演</span><span id="modal-director">載入中...</span></div>
         </div>
       </div>
     </div>`;
@@ -151,6 +152,19 @@ function showMovieDetail(movieId) {
   });
   document.body.appendChild(overlay);
   document.body.style.overflow = "hidden";
+
+  // Fetch director info
+  try {
+    const resp = await fetch(`/api/movie/${movieId}/detail`);
+    if (resp.ok) {
+      const detail = await resp.json();
+      const directorEl = document.getElementById("modal-director");
+      if (directorEl) directorEl.textContent = detail.director || "暫無資料";
+    }
+  } catch(e) {
+    const directorEl = document.getElementById("modal-director");
+    if (directorEl) directorEl.textContent = "暫無資料";
+  }
 
   document.addEventListener("keydown", function escHandler(e) {
     if (e.key === "Escape") { closeMovieDetail(); document.removeEventListener("keydown", escHandler); }

@@ -574,7 +574,7 @@
   // ── MOVIE DETAIL VIEW ──────────────────────────────────────────
   let chatLogsBackup = null;
 
-  window.chatbotShowDetail = function(movieId) {
+  window.chatbotShowDetail = async function(movieId) {
     const movie = movieData.find(m => (m.id || 0) === movieId);
     if (!movie) return;
 
@@ -608,9 +608,23 @@
           <div class="cb-detail-row"><span class="cb-detail-label">國家</span><span class="cb-detail-value">${escapeHtml(country)}</span></div>
           <div class="cb-detail-row"><span class="cb-detail-label">片長</span><span class="cb-detail-value">${escapeHtml(runtime)}</span></div>
           <div class="cb-detail-row"><span class="cb-detail-label">上映</span><span class="cb-detail-value">${escapeHtml(release)}</span></div>
+          <div class="cb-detail-row"><span class="cb-detail-label">導演</span><span class="cb-detail-value" id="cb-detail-director">載入中...</span></div>
         </div>
       </div>`;
     logs.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Fetch director info
+    try {
+      const resp = await fetch(`/api/movie/${movieId}/detail`);
+      if (resp.ok) {
+        const detail = await resp.json();
+        const dirEl = document.getElementById("cb-detail-director");
+        if (dirEl) dirEl.textContent = detail.director || "暫無資料";
+      }
+    } catch(e) {
+      const dirEl = document.getElementById("cb-detail-director");
+      if (dirEl) dirEl.textContent = "暫無資料";
+    }
   };
 
   window.chatbotGoBack = function() {
