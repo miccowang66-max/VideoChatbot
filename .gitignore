@@ -18,6 +18,9 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Posters (binary, use remote URLs)
+dist/components/posters/
+
 # Data archives (optional)
 *.zip
 *.tar.gz

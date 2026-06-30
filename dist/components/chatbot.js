@@ -11,7 +11,7 @@
   const CONFIG = {
     botName: "MovieMind AI 影音特工",
     dataUrl: "data/clean_movies_20260630.json",
-    posterBase: "components/posters/",
+    posterBase: null, // null = use m.cover (remote URL) or fallback to local
     defaultMsg: "哈囉！我是您的 <b>MovieMind AI 影音特工</b>。🎬<br>點擊下方快捷鍵或輸入喜好，我為您推薦好片！",
     llmProvider: "openai", // default LLM provider
   };
@@ -344,7 +344,7 @@
         const stars = Array.from({length:5}, (_,s) => s < Math.min(5,Math.max(1,Math.round((m.score_num||m.score||0)/2))) ? "★" : "☆").join("");
         const badges = (m.categories ? (Array.isArray(m.categories) ? m.categories : m.categories.split(",")) : [])
           .slice(0,2).map(c => `<span class="cb-movie-badge">${c.trim()}</span>`).join("");
-        const poster = m.id ? `${CONFIG.posterBase}${m.id}.jpg` : (m.poster||"");
+        const poster = m.cover || m.poster || (CONFIG.posterBase && m.id ? `${CONFIG.posterBase}${m.id}.jpg` : "");
         const title = (m.title||"").split(" - ")[0];
         const score = m.score_num || m.score || 0;
         const url = m.detail_url || m.url || "#";

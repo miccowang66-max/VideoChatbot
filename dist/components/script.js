@@ -51,7 +51,7 @@ function buildDateView(movies) {
 }
 
 function renderCard(m) {
-  const poster = m.id ? `components/posters/${m.id}.jpg` : "";
+  const poster = m.cover || (m.id ? `components/posters/${m.id}.jpg` : "");
   const title = m.title || "";
   const score = m.score || "";
   const date = m.release_date_clean || "未提供";
