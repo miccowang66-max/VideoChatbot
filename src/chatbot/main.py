@@ -13,13 +13,13 @@ with open(PROCESSED_PATH, "r", encoding="utf-8") as f:
 
 app = FastAPI(title="Movie Browser")
 
-app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "components")), name="static")
-app.mount("/posters", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "components" / "posters")), name="posters")
+app.mount("/components", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "components")), name="components")
+app.mount("/data", StaticFiles(directory=str(PROJECT_ROOT / "dist" / "data")), name="data")
 
 
 @app.get("/")
 def serve_index():
-    return FileResponse(str(PROJECT_ROOT / "dist" / "html" / "index.html"))
+    return FileResponse(str(PROJECT_ROOT / "dist" / "index.html"))
 
 
 @app.get("/api/movies")
