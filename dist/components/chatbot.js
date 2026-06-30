@@ -292,6 +292,11 @@
       useLLM = false;
       document.getElementById("cb-llm-status").textContent = "⚠️ 未設定 API Key，使用關鍵字匹配模式";
     }
+    // Auto-close settings panel after save
+    setTimeout(() => {
+      document.getElementById("cb-settings").style.display = "none";
+      isSettingsOpen = false;
+    }, 300);
   }
 
   function clearSettings() {
