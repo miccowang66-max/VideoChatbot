@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電影瀏覽器</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>電影瀏覽器</h1>
+  <div class="sort-bar">
+    <span>排序方式：</span>
+    <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
+    <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+  </div>
+</header>
+
+<main id="content">
+  <div class="loading">載入中...</div>
+</main>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
