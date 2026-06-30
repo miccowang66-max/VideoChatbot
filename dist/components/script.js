@@ -92,7 +92,8 @@ function renderCard(m) {
   const title = m.title || "";
   const score = m.score || "";
   const date = m.release_date_clean || "未提供";
-  const url = m.id ? `/detail/${m.id}` : "#";
+  const isHF = window.location.hostname.includes("hf.space");
+  const url = m.id ? (isHF ? `/detail/${m.id}` : (m.detail_url || `https://ssr1.scrape.center/detail/${m.id}`)) : "#";
   return `
     <a href="${url}" target="_blank" class="movie-card" data-movie-id="${m.id}" style="text-decoration:none;color:inherit;display:block;">
       <img src="${poster}" alt="${escapeHtml(title)}" loading="lazy" 
