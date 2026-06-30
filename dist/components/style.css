@@ -1,7 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", "Inter", sans-serif;
   background: #0d1117;
   color: #c9d1d9;
   min-height: 100vh;
@@ -9,7 +9,7 @@ body {
 
 header {
   background: #161b22;
-  padding: 20px 40px;
+  padding: 16px 40px 14px;
   border-bottom: 1px solid #30363d;
   position: sticky;
   top: 0;
@@ -17,27 +17,41 @@ header {
 }
 
 header h1 {
-  font-size: 24px;
+  font-size: 22px;
   color: #58a6ff;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.sort-bar {
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #8b949e;
+  font-weight: 600;
 }
 
 .sort-btn {
   background: #21262d;
   border: 1px solid #30363d;
   color: #8b949e;
-  padding: 6px 16px;
+  padding: 5px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
 }
 
 .sort-btn:hover { border-color: #58a6ff; color: #c9d1d9; }

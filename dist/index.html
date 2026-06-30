@@ -12,10 +12,23 @@
   <!-- ==================== MOVIE BROWSER ==================== -->
   <header>
     <h1>電影瀏覽器</h1>
-    <div class="sort-bar">
-      <span>排序方式：</span>
-      <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
-      <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label">排序：</span>
+        <button id="btn-category" class="sort-btn active" onclick="switchSort('category')">類別</button>
+        <button id="btn-date" class="sort-btn" onclick="switchSort('date')">上映時間</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">評分：</span>
+        <button id="btn-score-all" class="sort-btn active" onclick="setScoreFilter('all')">全部</button>
+        <button id="btn-score-low" class="sort-btn" onclick="setScoreFilter('low')">6分以下</button>
+        <button id="btn-score-mid" class="sort-btn" onclick="setScoreFilter('mid')">6 - 8 分</button>
+        <button id="btn-score-high" class="sort-btn" onclick="setScoreFilter('high')">9分以上</button>
+      </div>
+    </div>
+    <div class="filter-group" style="margin-top:10px;">
+      <span class="filter-label">類別：</span>
+      <span id="category-btns"></span>
     </div>
   </header>
 

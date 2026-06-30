@@ -41,12 +41,12 @@
   };
 
   const QUICK_ACTIONS = [
-    { label:"🍿 盲盒抽片", cls:"blind", action:"blind" },
-    { label:"🔥 9.5分神作", cls:"top", action:"top" },
-    { label:"🎭 浪漫愛情", cls:"romance", action:"romance" },
-    { label:"🥋 熱血動作", cls:"action", action:"action" },
-    { label:"🧠 燒腦懸疑", cls:"suspense", action:"suspense" },
-    { label:"😢 催淚劇情", cls:"drama", action:"sadness" },
+    { label:"🍿 盲盒抽片", cls:"cb-quick--blind", action:"blind" },
+    { label:"🔥 9.5分神作", cls:"cb-quick--top", action:"top" },
+    { label:"🎭 愛情", cls:"cb-quick--love", action:"romance" },
+    { label:"🥋 動作", cls:"cb-quick--action", action:"action" },
+    { label:"🧠 懸疑", cls:"cb-quick--suspense", action:"suspense" },
+    { label:"😢 劇情", cls:"cb-quick--drama", action:"sadness" },
   ];
 
   // ── BUILD DOM ──────────────────────────────────────────────────
@@ -80,7 +80,7 @@
     // Toggle button
     const toggleBtn = document.createElement("div");
     toggleBtn.id = "chatbot-toggle-btn";
-    toggleBtn.className = "chatbot-btn-float";
+    toggleBtn.className = "cb-anim-float";
     toggleBtn.innerHTML = `
       <div id="chatbot-badge">AI</div>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -92,70 +92,69 @@
     // Window panel
     const windowEl = document.createElement("div");
     windowEl.id = "chatbot-window";
-    windowEl.className = "chatbot-glass-panel cb-hidden";
+    windowEl.className = "cb-hidden";
     windowEl.innerHTML = `
       <!-- Header -->
       <div class="cb-header">
         <div class="cb-header-left">
           <span class="cb-header-icon">🤖</span>
           <div>
-            <div class="cb-header-title">${CONFIG.botName}</div>
+            <div class="cb-header-title">MovieMind AI <span class="cb-header-brand">影音特工</span></div>
             <div class="cb-header-status">
-              <span class="cb-header-dot-pulse"></span>
-              <span class="cb-header-dot" style="position:relative;margin-left:5px;"></span>
-              <span class="cb-header-sub">100 部神作連線中</span>
+              <span class="cb-status-dot live"></span>
+              <span class="cb-status-text">100 部神作連線中</span>
             </div>
           </div>
         </div>
-        <div style="display:flex;gap:4px;">
-          <button id="cb-gear-btn" class="cb-close-btn" title="LLM 設定">
+        <div class="cb-header-actions">
+          <button id="cb-gear-btn" class="cb-icon-btn" title="LLM 設定">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </button>
-          <button id="cb-close-btn" class="cb-close-btn" title="關閉">
+          <button id="cb-close-btn" class="cb-icon-btn" title="關閉">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
       </div>
 
       <!-- Settings panel (hidden by default) -->
-      <div id="cb-settings" style="display:none;padding:16px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);">
-        <h3 style="color:#e2e8f0;font-size:13px;font-weight:700;margin-bottom:12px;">⚙️ LLM 設定</h3>
-        <div style="display:flex;flex-direction:column;gap:10px;">
+      <div id="cb-settings" class="cb-settings" style="display:none;">
+        <h3 class="cb-settings-title">⚙️ LLM 設定</h3>
+        <div class="cb-settings-grid">
           <div>
-            <label style="color:#94a3b8;font-size:10px;font-weight:600;">LLM Provider</label>
-            <select id="cb-llm-provider" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#fff;font-size:11px;">
+            <label class="cb-field-label">LLM Provider</label>
+            <select id="cb-llm-provider" class="cb-select">
               <option value="openai">OpenAI</option>
               <option value="openrouter">OpenRouter</option>
               <option value="custom">Custom API</option>
             </select>
           </div>
           <div>
-            <label style="color:#94a3b8;font-size:10px;font-weight:600;">Model</label>
-            <select id="cb-llm-model" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#fff;font-size:11px;">
+            <label class="cb-field-label">Model</label>
+            <select id="cb-llm-model" class="cb-select">
               <option value="gpt-4o-mini">gpt-4o-mini</option>
               <option value="gpt-4o">gpt-4o</option>
               <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
             </select>
           </div>
           <div>
-            <label style="color:#94a3b8;font-size:10px;font-weight:600;">API Key</label>
-            <input type="password" id="cb-llm-key" placeholder="sk-..." style="width:100%;margin-top:4px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#fff;font-size:11px;">
+            <label class="cb-field-label">API Key</label>
+            <input type="password" id="cb-llm-key" class="cb-input" placeholder="sk-...">
           </div>
-          <div style="display:flex;gap:8px;">
-            <button id="cb-save-settings" style="flex:1;background:linear-gradient(135deg,#00f2fe,#ff6b00);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;font-size:11px;cursor:pointer;">儲存</button>
-            <button id="cb-clear-settings" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#94a3b8;font-size:11px;cursor:pointer;">清除</button>
+          <div class="cb-btn-row">
+            <button id="cb-save-settings" class="cb-btn cb-btn-primary">儲存</button>
+            <button id="cb-clear-settings" class="cb-btn cb-btn-ghost">清除</button>
           </div>
-          <p id="cb-llm-status" style="font-size:10px;color:#10b981;margin:0;"></p>
+          <p id="cb-llm-status" class="cb-settings-status"></p>
         </div>
       </div>
 
       <!-- Chat logs -->
-      <div id="chatbot-logs" class="cb-logs chatbot-scroll">
-        <div class="cb-msg-row">
-          <div class="cb-msg-avatar bot">🤖</div>
-          <div class="cb-msg-bubble">
-            <span class="cb-msg-label">MOVIEMIND BOT</span>
-            <div class="cb-msg-text bot">${CONFIG.defaultMsg}</div>
+      <div id="chatbot-logs" class="cb-logs cb-scroll">
+        <div class="cb-msg cb-msg--bot">
+          <div class="cb-avatar cb-avatar--bot">🤖</div>
+          <div class="cb-bubble">
+            <span class="cb-bubble-label">MOVIEMIND BOT</span>
+            <div class="cb-bubble-body cb-bubble-body--bot">${CONFIG.defaultMsg}</div>
           </div>
         </div>
       </div>
@@ -176,7 +175,7 @@
     const quickBar = document.getElementById("cb-quick-bar");
     QUICK_ACTIONS.forEach(q => {
       const btn = document.createElement("button");
-      btn.className = `cb-quick-btn ${q.cls}`;
+      btn.className = `cb-quick ${q.cls}`;
       btn.textContent = q.label;
       btn.onclick = () => handleQuickAction(q.action);
       quickBar.appendChild(btn);
@@ -307,12 +306,12 @@
   // ── MESSAGE RENDERING ──────────────────────────────────────────
   function appendUserMessage(text) {
     const html = `
-      <div class="cb-msg-row user">
-        <div class="cb-msg-bubble">
-          <span class="cb-msg-label user">YOU</span>
-          <div class="cb-msg-text user">${escapeHtml(text)}</div>
+      <div class="cb-msg cb-msg--user">
+        <div class="cb-bubble">
+          <span class="cb-bubble-label user">YOU</span>
+          <div class="cb-bubble-body cb-bubble-body--user">${escapeHtml(text)}</div>
         </div>
-        <div class="cb-msg-avatar user">👤</div>
+        <div class="cb-avatar cb-avatar--user">👤</div>
       </div>`;
     document.getElementById("chatbot-logs").insertAdjacentHTML("beforeend", html);
     scrollToBottom();
@@ -321,11 +320,11 @@
   function createTypingIndicator() {
     const id = "cb-typing-" + Date.now();
     const html = `
-      <div id="${id}" class="cb-msg-row chatbot-animate-fade-in-up">
-        <div class="cb-msg-avatar bot">🤖</div>
-        <div class="cb-msg-bubble">
-          <span class="cb-msg-label">MOVIEMIND BOT</span>
-          <div class="cb-msg-text bot"><div class="cb-typing-dots"><span></span><span></span><span></span></div></div>
+      <div id="${id}" class="cb-msg cb-msg--bot cb-anim-fade-in">
+        <div class="cb-avatar cb-avatar--bot">🤖</div>
+        <div class="cb-bubble">
+          <span class="cb-bubble-label">MOVIEMIND BOT</span>
+          <div class="cb-bubble-body cb-bubble-body--bot"><div class="cb-typing"><span></span><span></span><span></span></div></div>
         </div>
       </div>`;
     document.getElementById("chatbot-logs").insertAdjacentHTML("beforeend", html);
@@ -339,33 +338,33 @@
     const id = "cb-msg-" + Date.now();
     let cardsHtml = "";
     if (movies && movies.length > 0) {
-      cardsHtml = '<div class="cb-movie-cards" style="display:flex;flex-direction:column;gap:12px;margin-top:10px;">';
+      cardsHtml = '<div class="cb-mcards" style="display:flex;flex-direction:column;gap:12px;margin-top:10px;">';
       movies.forEach((m, i) => {
         const stars = Array.from({length:5}, (_,s) => s < Math.min(5,Math.max(1,Math.round((m.score_num||m.score||0)/2))) ? "★" : "☆").join("");
         const badges = (m.categories ? (Array.isArray(m.categories) ? m.categories : m.categories.split(",")) : [])
-          .slice(0,2).map(c => `<span class="cb-movie-badge">${c.trim()}</span>`).join("");
+          .slice(0,2).map(c => `<span class="cb-mcard-badge">${c.trim()}</span>`).join("");
         const poster = m.cover || m.poster || (CONFIG.posterBase && m.id ? `${CONFIG.posterBase}${m.id}.jpg` : "");
         const title = (m.title||"").split(" - ")[0];
         const score = m.score_num || m.score || 0;
         const url = m.detail_url || m.url || "#";
         cardsHtml += `
-          <div class="cb-movie-card chatbot-animate-fade-in-up" style="animation-delay:${i*100}ms">
-            <div class="cb-movie-poster"><img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'"></div>
-            <div class="cb-movie-info">
-              <div class="cb-movie-title-c" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
-              <div class="cb-movie-meta"><span class="cb-movie-stars">${stars}</span><span class="cb-movie-score">${Number(score).toFixed(1)}</span></div>
-              <div class="cb-movie-bottom"><div class="cb-movie-badges">${badges}</div><a href="${url}" target="_blank" class="cb-movie-link">詳情 ▸</a></div>
+          <div class="cb-mcard cb-anim-fade-in" style="animation-delay:${i*100}ms">
+            <div class="cb-mcard-poster"><img src="${poster}" alt="${escapeHtml(title)}" onerror="this.style.display='none'"></div>
+            <div class="cb-mcard-info">
+              <div class="cb-mcard-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
+              <div class="cb-mcard-row"><span class="cb-mcard-stars">${stars}</span><span class="cb-mcard-score">${Number(score).toFixed(1)}</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;"><div class="cb-mcard-badges">${badges}</div><a href="${url}" target="_blank" class="cb-mcard-link">詳情 ▸</a></div>
             </div>
           </div>`;
       });
       cardsHtml += '</div>';
     }
     const html = `
-      <div id="${id}" class="cb-msg-row chatbot-animate-fade-in-up">
-        <div class="cb-msg-avatar bot">🤖</div>
-        <div class="cb-msg-bubble">
-          <span class="cb-msg-label">MOVIEMIND BOT</span>
-          <div class="cb-msg-text bot">${introText}${cardsHtml}</div>
+      <div id="${id}" class="cb-msg cb-msg--bot cb-anim-fade-in">
+        <div class="cb-avatar cb-avatar--bot">🤖</div>
+        <div class="cb-bubble">
+          <span class="cb-bubble-label">MOVIEMIND BOT</span>
+          <div class="cb-bubble-body cb-bubble-body--bot">${introText}${cardsHtml}</div>
         </div>
       </div>`;
     document.getElementById("chatbot-logs").insertAdjacentHTML("beforeend", html);
@@ -422,7 +421,7 @@
   }
 
   function handleQuickAction(act) {
-    const labels = { blind:"🍿 盲盒抽片", top:"🔥 9.5分神作", romance:"🎭 浪漫愛情", action:"🥋 熱血動作", suspense:"🧠 燒腦懸疑", sadness:"😢 催淚劇情" };
+    const labels = { blind:"🍿 盲盒抽片", top:"🔥 9.5分神作", romance:"🎭 愛情", action:"🥋 動作", suspense:"🧠 懸疑", sadness:"😢 劇情" };
     const label = labels[act] || act;
     appendUserMessage(label);
 
