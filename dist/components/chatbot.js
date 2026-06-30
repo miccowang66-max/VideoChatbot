@@ -13,7 +13,8 @@
     dataUrl: "data/clean_movies_20260630.json",
     posterBase: null, // null = use m.cover (remote URL) or fallback to local
     defaultMsg: "哈囉！我是您的 <b>MovieMind AI 影音特工</b>。🎬<br>點擊下方快捷鍵或輸入喜好，我為您推薦好片！",
-    llmProvider: "openai", // default LLM provider
+    llmProvider: "openai",
+    llmModel: "gpt-4o-mini",
   };
 
   // ── STATE ──────────────────────────────────────────────────────
@@ -122,10 +123,10 @@
         <div class="cb-settings-grid">
           <div>
             <label class="cb-field-label">LLM Provider</label>
-            <select id="cb-llm-provider" class="cb-select">
+             <select id="cb-llm-provider" class="cb-select">
               <option value="openai">OpenAI</option>
-              <option value="openrouter">OpenRouter</option>
-              <option value="custom">Custom API</option>
+              <option value="gemini">Gemini</option>
+              <option value="opencode">OpenCode</option>
             </select>
           </div>
           <div>
@@ -257,10 +258,10 @@
     modelSelect.innerHTML = "";
     const models = {
       openai: ["gpt-4o-mini","gpt-4o","gpt-3.5-turbo"],
-      openrouter: ["openai/gpt-4o-mini","anthropic/claude-3.5-sonnet","google/gemini-2.0-flash"],
-      custom: ["custom-model"],
+      gemini: ["gemini-2.0-flash","gemini-2.5-pro","gemini-1.5-pro"],
+      opencode: ["gpt-4o-mini","gpt-4o","claude-3.5-sonnet"],
     };
-    (models[provider] || ["custom"]).forEach(m => {
+    (models[provider] || ["gpt-4o-mini"]).forEach(m => {
       const opt = document.createElement("option");
       opt.value = m; opt.textContent = m;
       modelSelect.appendChild(opt);
@@ -451,43 +452,63 @@
     }).join("\n");
 
     const systemPrompt = `你是 MovieMind AI 影音特工，一個電影推薦助手。你擁有 100 部經典電影的資料庫。根據使用者輸入，從資料庫中推薦最合適的 3 部電影。只回覆電影編號(用逗號分隔，如: 1,5,23)和一句簡短推薦語。格式：\n電影: 1,5,23\n推薦語: [你的推薦]`;
-
-    const urls = {
-      openai: "https://api.openai.com/v1/chat/completions",
-      openrouter: "https://openrouter.ai/api/v1/chat/completions",
-      custom: "https://api.openai.com/v1/chat/completions",
-    };
-    const url = urls[llmProvider] || urls.openai;
-    const model = llmModel || "gpt-4o-mini";
+    const userPrompt = `電影資料庫：\n${movieList}\n\n使用者查詢: ${userQuery}`;
 
     try {
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${llmApiKey}`,
-          ...(llmProvider === "openrouter" ? {"HTTP-Referer": window.location.origin, "X-Title": "MovieMind AI"} : {}),
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `電影資料庫：\n${movieList}\n\n使用者查詢: ${userQuery}` }
-          ],
-          max_tokens: 200,
-          temperature: 0.7,
-        }),
-      });
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      const content = data.choices[0].message.content;
+      let resp, data, content;
+
+      if (llmProvider === "gemini") {
+        const model = llmModel || "gemini-2.0-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmApiKey}`;
+        resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
+            generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+          }),
+        });
+        if (!resp.ok) return null;
+        data = await resp.json();
+        content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      } else {
+        // OpenAI / OpenCode (OpenAI-compatible API)
+        const urls = {
+          openai: "https://api.openai.com/v1/chat/completions",
+          opencode: "https://api.openai.com/v1/chat/completions",
+        };
+        const url = urls[llmProvider] || urls.openai;
+        const model = llmModel || "gpt-4o-mini";
+        resp = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${llmApiKey}`,
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ],
+            max_tokens: 200,
+            temperature: 0.7,
+          }),
+        });
+        if (!resp.ok) return null;
+        data = await resp.json();
+        content = data.choices?.[0]?.message?.content || "";
+      }
+
+      if (!content) return null;
+
       // Parse movie IDs
       const idMatch = content.match(/電影[：:]\s*([\d,\s]+)/) || content.match(/(\d+)[,\s]*(\d+)[,\s]*(\d+)/);
       if (idMatch) {
         const ids = (idMatch[1] + (idMatch[2]||"") + (idMatch[3]||"")).split(/[,\s]+/).map(Number).filter(n=>n>0);
         const recMovies = ids.map(id => movieData.find(m => (m.id||0) === id)).filter(Boolean);
         if (recMovies.length > 0) {
-          const recText = content.match(/推薦語[：:]\s*(.+)/)?.[1] || "LLM 為您挑選：";
+          const recText = content.match(/推薦語[：:]\s*(.+)/)?.[1] || "AI 為您挑選：";
           return { movies: recMovies.slice(0,3), intro: recText };
         }
       }
