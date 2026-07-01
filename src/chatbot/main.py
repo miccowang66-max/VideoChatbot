@@ -109,7 +109,7 @@ def chat_endpoint(req: ChatRequest):
     })
 
 
-# ── Movie detail scraper (director info) ──────────────────────
+# ── Movie detail scraper (director, actors, synopsis) ─────────
 DETAIL_CACHE = {}
 
 
@@ -117,7 +117,7 @@ def scrape_detail(movie_id: int) -> dict:
     if movie_id in DETAIL_CACHE:
         return DETAIL_CACHE[movie_id]
 
-    result = {"director": ""}
+    result = {"director": "", "director_photo": "", "synopsis": "", "actors": []}
     try:
         url = f"https://ssr1.scrape.center/detail/{movie_id}"
         headers = {
@@ -127,25 +127,53 @@ def scrape_detail(movie_id: int) -> dict:
         resp.encoding = "utf-8"
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # Extract director from detail page
-        for el in soup.select(".item"):
-            text = el.get_text(strip=True)
-            if "導演" in text or "导演" in text:
-                result["director"] = text.split(":")[-1].split("：")[-1].strip()
-                break
+        # Extract synopsis
+        drama_el = soup.select_one(".drama p")
+        if drama_el:
+            result["synopsis"] = drama_el.get_text(strip=True)
 
-        # Also try director span
-        director_el = soup.select_one(".director") or soup.select_one("[class*='director']")
-        if not result["director"] and director_el:
-            result["director"] = director_el.get_text(strip=True)
+        # Extract director
+        director_section = soup.select_one(".directors")
+        if director_section:
+            director_cards = director_section.select(".director")
+            if director_cards:
+                d = director_cards[0]
+                name_el = d.select_one(".name")
+                img_el = d.select_one("img")
+                if name_el:
+                    result["director"] = name_el.get_text(strip=True)
+                if img_el:
+                    src = img_el.get("src", "")
+                    if src and not src.startswith("http"):
+                        src = "https://ssr1.scrape.center" + src
+                    result["director_photo"] = src
 
         if not result["director"]:
-            for el in soup.select(".el-row"):
-                txt = el.get_text(strip=True)
-                if "導演" in txt:
-                    m = re.search(r"導演[：:]\s*(.+)", txt)
-                    if m:
-                        result["director"] = m.group(1).strip()
+            for el in soup.select(".item"):
+                text = el.get_text(strip=True)
+                if "導演" in text or "导演" in text:
+                    result["director"] = text.split(":")[-1].split("：")[-1].strip()
+                    break
+
+        # Extract actors
+        actors_section = soup.select_one(".actors")
+        if actors_section:
+            for actor_el in actors_section.select(".actor"):
+                name_el = actor_el.select_one(".name")
+                role_el = actor_el.select_one(".role")
+                img_el = actor_el.select_one("img")
+                photo = ""
+                if img_el:
+                    photo = img_el.get("src", "")
+                    if photo and not photo.startswith("http"):
+                        photo = "https://ssr1.scrape.center" + photo
+                actor = {
+                    "name": name_el.get_text(strip=True) if name_el else "",
+                    "role": role_el.get_text(strip=True).replace("饰：", "") if role_el else "",
+                    "photo": photo,
+                }
+                if actor["name"]:
+                    result["actors"].append(actor)
 
     except Exception:
         pass
@@ -159,53 +187,149 @@ def movie_detail(movie_id: int):
     return JSONResponse(scrape_detail(movie_id))
 
 
-# ── Detail page proxy ─────────────────────────────────────────
+# ── Detail page (self-contained) ─────────────────────────────
+def _escape(text: str) -> str:
+    return (text.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def _proxy_img(url: str, base: str) -> str:
+    if not url:
+        return ""
+    return f"{base}/proxy/image?url={quote(url, safe='')}"
+
+
+def _stars_html(score_num: float) -> str:
+    full = int(score_num // 2)
+    half = 1 if (score_num % 2) >= 1 else 0
+    empty = 5 - full - half
+    return "★" * full + ("½" if half else "") + "☆" * empty
+
+
+def _detail_page_html(movie: dict, detail: dict, base: str) -> str:
+    title = _escape(movie.get("title", ""))
+    cover = _proxy_img(movie.get("cover", ""), base)
+    categories = movie.get("categories", [])
+    country = _escape(movie.get("country", ""))
+    runtime = _escape(movie.get("runtime", ""))
+    release = _escape(movie.get("release_date_clean", movie.get("release_date", "")))
+    score = movie.get("score", "")
+    score_num = movie.get("score_num", 0)
+    synopsis = _escape(detail.get("synopsis", ""))
+    director = _escape(detail.get("director", ""))
+    director_photo = _proxy_img(detail.get("director_photo", ""), base)
+    actors = detail.get("actors", [])
+
+    cat_html = "".join(
+        f'<span class="dtag">{_escape(c)}</span>' for c in categories
+    )
+
+    actors_html = ""
+    for a in actors:
+        photo = _proxy_img(a.get("photo", ""), base)
+        name = _escape(a.get("name", ""))
+        role = _escape(a.get("role", ""))
+        actors_html += f'''<div class="person-card">
+          <img src="{photo}" alt="{name}" loading="lazy"
+               onerror="this.style.display='none'">
+          <p class="person-name">{name}</p>
+          <p class="person-role">{role}</p>
+        </div>'''
+
+    director_html = ""
+    if director:
+        director_html = f'''<div class="detail-section">
+        <h2>導演</h2>
+        <div class="persons-row">
+          <div class="person-card">
+            <img src="{director_photo}" alt="{director}" loading="lazy"
+                 onerror="this.style.display='none'">
+            <p class="person-name">{director}</p>
+          </div>
+        </div>
+      </div>'''
+
+    actors_section = ""
+    if actors_html:
+        actors_section = f'''<div class="detail-section">
+        <h2>演員</h2>
+        <div class="persons-row">{actors_html}</div>
+      </div>'''
+
+    synopsis_html = ""
+    if synopsis:
+        synopsis_html = f'''<div class="synopsis">
+          <h3>劇情簡介</h3>
+          <p>{synopsis}</p>
+        </div>'''
+
+    return f'''<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} - 電影詳情</title>
+  <link rel="stylesheet" href="/components/detail.css">
+</head>
+<body>
+  <header class="detail-header">
+    <a href="/" class="back-btn">&#8592; 返回電影列表</a>
+    <span class="header-title">🎬 HOT MOVIE小幫手</span>
+  </header>
+
+  <main class="detail-container">
+    <div class="detail-card">
+      <div class="detail-main">
+        <div class="detail-poster">
+          <img src="{cover}" alt="{title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22><rect fill=%22%23111827%22 width=%22300%22 height=%22450%22 rx=%228%22/><text fill=%22%236b7280%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No Image</text></svg>';">
+        </div>
+        <div class="detail-info">
+          <h1 class="detail-title">{title}</h1>
+          <div class="detail-categories">{cat_html}</div>
+          <div class="detail-meta">
+            <span class="meta-item">{country}</span>
+            <span class="meta-sep">/</span>
+            <span class="meta-item">{runtime}</span>
+          </div>
+          <div class="detail-release">{release} 上映</div>
+          {synopsis_html}
+        </div>
+        <div class="detail-score-box">
+          <p class="big-score">{score}</p>
+          <p class="stars">{_stars_html(score_num)}</p>
+        </div>
+      </div>
+    </div>
+
+    {director_html}
+    {actors_section}
+  </main>
+
+  <footer class="detail-footer">
+    <p>&copy; 🎬 Movie Browser 電影瀏覽器. All Rights Reserved.</p>
+  </footer>
+</body>
+</html>'''
+
+
+@app.get("/detail/{movie_id}", response_class=HTMLResponse)
+def detail_page(movie_id: int, request: Request):
+    movie = next((m for m in MOVIES if m.get("id") == movie_id), None)
+    if not movie:
+        return HTMLResponse(content="<h2>找不到該電影</h2><p><a href='/'>返回首頁</a></p>", status_code=404)
+
+    detail = scrape_detail(movie_id)
+    base = str(request.base_url).rstrip("/")
+    return HTMLResponse(content=_detail_page_html(movie, detail, base))
+
+
+# ── Image proxy ───────────────────────────────────────────────
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 SCRAPE_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
     "Referer": "https://ssr1.scrape.center/",
 }
-
-
-@app.get("/detail/{movie_id}", response_class=HTMLResponse)
-def proxy_detail(movie_id: int, request: Request):
-    """Proxy the detail page and rewrite asset/image URLs."""
-    try:
-        url = f"https://ssr1.scrape.center/detail/{movie_id}"
-        resp = requests.get(url, headers=SCRAPE_HEADERS, timeout=15, verify=False)
-        resp.encoding = "utf-8"
-        html = resp.text
-
-        base = str(request.base_url).rstrip("/")
-        origin = "https://ssr1.scrape.center"
-
-        # Rewrite relative asset URLs to absolute origin
-        html = re.sub(r'(href|src)="/', rf'\1="{origin}/', html)
-        html = re.sub(r"(href|src)='/", rf"\1='{origin}/", html)
-
-        # Rewrite CSS url() for static resources
-        html = re.sub(r'url\(["\']?/([^"\')\s]*\.(?:css|js|png|svg|ico|woff2?|ttf)[^"\')\s]*)["\']?\)',
-                      lambda m: f'url("{origin}/{m.group(1)}")', html)
-
-        # Rewrite image src to use our proxy
-        html = re.sub(r'src="(https?://[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"',
-                      lambda m: f'src="{base}/proxy/image?url={quote(m.group(1), safe="")}"', html)
-        html = re.sub(r"src='(https?://[^']+\.(?:jpg|jpeg|png|webp|gif)[^']*)'",
-                      lambda m: f"src='{base}/proxy/image?url={quote(m.group(1), safe='')}'", html)
-
-        # Rewrite CSS url() image references
-        html = re.sub(r'url\(["\']?(https?://[^"\')\s]+\.(?:jpg|jpeg|png|webp|gif)[^"\')\s]*)["\']?\)',
-                      lambda m: f'url("{base}/proxy/image?url={quote(m.group(1), safe="")}")', html)
-
-        # Inject <base> tag for relative paths
-        html = html.replace("<head>", f'<head>\n  <base href="{origin}/">', 1)
-
-        return HTMLResponse(content=html)
-    except Exception as e:
-        return HTMLResponse(content=f"<h2>無法載入詳情頁</h2><p>{e}</p>", status_code=502)
 
 
 @app.get("/proxy/image")
