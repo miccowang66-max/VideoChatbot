@@ -269,7 +269,7 @@
     const models = {
       openai: ["gpt-4o-mini","gpt-4o","gpt-3.5-turbo"],
       gemini: ["gemini-2.0-flash","gemini-2.5-pro","gemini-1.5-pro"],
-      grok: ["grok-2","grok-2-mini"],
+      grok: ["grok-3-mini","grok-3"],
     };
     (models[provider] || ["gpt-4o-mini"]).forEach(m => {
       const opt = document.createElement("option");

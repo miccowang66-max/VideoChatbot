@@ -100,7 +100,7 @@ def llm_proxy(req: LLMRequest):
                 "grok": "https://api.x.ai/v1/chat/completions",
             }
             url = urls.get(req.provider, urls["openai"])
-            model = req.model or ("gpt-4o-mini" if req.provider == "openai" else "grok-2")
+            model = req.model or ("gpt-4o-mini" if req.provider == "openai" else "grok-3-mini")
             resp = requests.post(url,
                 headers={
                     "Content-Type": "application/json",
