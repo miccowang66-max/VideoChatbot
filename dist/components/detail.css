@@ -74,11 +74,13 @@ body {
   background: #21262d;
 }
 
-.detail-poster img {
+.detail-poster img,
+.cover-img {
   width: 100%;
   aspect-ratio: 2/3;
   object-fit: cover;
   display: block;
+  background: #21262d;
 }
 
 .detail-info {

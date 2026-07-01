@@ -193,10 +193,13 @@ def _escape(text: str) -> str:
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
-def _proxy_img(url: str, base: str) -> str:
+def _img_tag(url: str, base: str, alt: str = "", css_class: str = "") -> str:
     if not url:
         return ""
-    return f"{base}/proxy/image?url={quote(url, safe='')}"
+    proxy = f"{base}/proxy/image?url={quote(url, safe='')}"
+    cls = f' class="{css_class}"' if css_class else ""
+    return (f'<img src="{url}" alt="{_escape(alt)}"{cls} loading="lazy" '
+            f'onerror="this.onerror=null;this.src=\'{proxy}\';">')
 
 
 def _stars_html(score_num: float) -> str:
@@ -208,7 +211,7 @@ def _stars_html(score_num: float) -> str:
 
 def _detail_page_html(movie: dict, detail: dict, base: str) -> str:
     title = _escape(movie.get("title", ""))
-    cover = _proxy_img(movie.get("cover", ""), base)
+    cover_url = movie.get("cover", "")
     categories = movie.get("categories", [])
     country = _escape(movie.get("country", ""))
     runtime = _escape(movie.get("runtime", ""))
@@ -217,33 +220,34 @@ def _detail_page_html(movie: dict, detail: dict, base: str) -> str:
     score_num = movie.get("score_num", 0)
     synopsis = _escape(detail.get("synopsis", ""))
     director = _escape(detail.get("director", ""))
-    director_photo = _proxy_img(detail.get("director_photo", ""), base)
+    director_photo_url = detail.get("director_photo", "")
     actors = detail.get("actors", [])
 
     cat_html = "".join(
         f'<span class="dtag">{_escape(c)}</span>' for c in categories
     )
 
+    cover_img = _img_tag(cover_url, base, title, "cover-img")
+
     actors_html = ""
     for a in actors:
-        photo = _proxy_img(a.get("photo", ""), base)
         name = _escape(a.get("name", ""))
         role = _escape(a.get("role", ""))
+        img = _img_tag(a.get("photo", ""), base, name)
         actors_html += f'''<div class="person-card">
-          <img src="{photo}" alt="{name}" loading="lazy"
-               onerror="this.style.display='none'">
+          {img}
           <p class="person-name">{name}</p>
           <p class="person-role">{role}</p>
         </div>'''
 
     director_html = ""
     if director:
+        d_img = _img_tag(director_photo_url, base, director)
         director_html = f'''<div class="detail-section">
         <h2>導演</h2>
         <div class="persons-row">
           <div class="person-card">
-            <img src="{director_photo}" alt="{director}" loading="lazy"
-                 onerror="this.style.display='none'">
+            {d_img}
             <p class="person-name">{director}</p>
           </div>
         </div>
@@ -281,7 +285,7 @@ def _detail_page_html(movie: dict, detail: dict, base: str) -> str:
     <div class="detail-card">
       <div class="detail-main">
         <div class="detail-poster">
-          <img src="{cover}" alt="{title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22><rect fill=%22%23111827%22 width=%22300%22 height=%22450%22 rx=%228%22/><text fill=%22%236b7280%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No Image</text></svg>';">
+          {cover_img}
         </div>
         <div class="detail-info">
           <h1 class="detail-title">{title}</h1>
