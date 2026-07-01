@@ -269,7 +269,7 @@
     const models = {
       openai: ["gpt-4o-mini","gpt-4o","gpt-3.5-turbo"],
       gemini: ["gemini-2.0-flash","gemini-2.5-pro","gemini-1.5-pro"],
-      grok: ["grok-3-mini","grok-3"],
+      grok: ["grok-2","grok-2-mini"],
     };
     (models[provider] || ["gpt-4o-mini"]).forEach(m => {
       const opt = document.createElement("option");
@@ -558,8 +558,11 @@ ${movieList}
         }),
       });
 
-      if (!resp.ok) return null;
       const data = await resp.json();
+      if (!resp.ok || data.error) {
+        console.warn("LLM error:", data.error || "Unknown error");
+        return null;
+      }
       const content = data.content || "";
       if (!content) return null;
 
