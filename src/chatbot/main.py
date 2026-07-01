@@ -66,6 +66,63 @@ class ChatRequest(BaseModel):
     top_k: int = 3
 
 
+class LLMRequest(BaseModel):
+    provider: str
+    model: str
+    api_key: str
+    messages: list
+
+
+@app.post("/api/llm")
+def llm_proxy(req: LLMRequest):
+    """Proxy LLM calls to avoid CORS issues in the browser."""
+    try:
+        if req.provider == "gemini":
+            model = req.model or "gemini-2.0-flash"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={req.api_key}"
+            # Convert messages to Gemini format
+            parts = []
+            for msg in req.messages:
+                parts.append({"text": f"[{msg['role']}]: {msg['content']}"})
+            resp = requests.post(url, json={
+                "contents": [{"parts": parts}],
+                "generationConfig": {"maxOutputTokens": 500, "temperature": 0.8},
+            }, timeout=30)
+            if resp.status_code != 200:
+                return JSONResponse({"error": resp.text}, status_code=resp.status_code)
+            data = resp.json()
+            content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            return JSONResponse({"content": content})
+        else:
+            # OpenAI / Grok (OpenAI-compatible)
+            urls = {
+                "openai": "https://api.openai.com/v1/chat/completions",
+                "grok": "https://api.x.ai/v1/chat/completions",
+            }
+            url = urls.get(req.provider, urls["openai"])
+            model = req.model or ("gpt-4o-mini" if req.provider == "openai" else "grok-beta")
+            resp = requests.post(url,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {req.api_key}",
+                },
+                json={
+                    "model": model,
+                    "messages": req.messages,
+                    "max_tokens": 500,
+                    "temperature": 0.8,
+                },
+                timeout=30,
+            )
+            if resp.status_code != 200:
+                return JSONResponse({"error": resp.text}, status_code=resp.status_code)
+            data = resp.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            return JSONResponse({"content": content})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.post("/api/chat")
 def chat_endpoint(req: ChatRequest):
     msg = req.message.strip().lower()

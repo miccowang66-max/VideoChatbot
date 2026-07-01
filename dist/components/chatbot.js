@@ -534,6 +534,7 @@ ${movieList}
 3. 用繁體中文回答，語氣親切專業
 4. 推薦時請說明推薦理由，讓回答豐富有趣
 5. 如果使用者的問題與電影無關，禮貌地引導回電影話題
+6. 理解同義詞：例如「可怕」=「恐怖/驚悚」，「好笑」=「喜劇」，「感人」=「劇情/催淚」
 
 回答格式要求：
 - 先用 1-3 句話回應使用者（包含推薦理由）
@@ -542,51 +543,24 @@ ${movieList}
 - 如果不需要推薦電影，可以不列出編號`;
 
     try {
-      let resp, data, content;
+      // Call backend proxy to avoid CORS
+      const resp = await fetch("/api/llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: llmProvider,
+          model: llmModel,
+          api_key: llmApiKey,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userQuery }
+          ],
+        }),
+      });
 
-      if (llmProvider === "gemini") {
-        const model = llmModel || "gemini-2.0-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmApiKey}`;
-        resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt + "\n\n使用者提問: " + userQuery }] }],
-            generationConfig: { maxOutputTokens: 500, temperature: 0.8 },
-          }),
-        });
-        if (!resp.ok) return null;
-        data = await resp.json();
-        content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      } else {
-        // OpenAI / Grok (OpenAI-compatible API)
-        const urls = {
-          openai: "https://api.openai.com/v1/chat/completions",
-          grok: "https://api.x.ai/v1/chat/completions",
-        };
-        const url = urls[llmProvider] || urls.openai;
-        const model = llmModel || "gpt-4o-mini";
-        resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${llmApiKey}`,
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userQuery }
-            ],
-            max_tokens: 500,
-            temperature: 0.8,
-          }),
-        });
-        if (!resp.ok) return null;
-        data = await resp.json();
-        content = data.choices?.[0]?.message?.content || "";
-      }
-
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const content = data.content || "";
       if (!content) return null;
 
       // Extract movie IDs from [[movie_ids]] ... [[/movie_ids]]
