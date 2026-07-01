@@ -173,3 +173,5 @@
 .cb-detail-row{display:flex;justify-content:space-between;align-items:center;padding:0 0 10px;border-bottom:1px solid rgba(0,0,0,.04)}
 .cb-detail-label{font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase}
 .cb-detail-value{font-size:12px;color:#374151;font-weight:500;text-align:right}
+.cb-detail-more{display:block;text-align:center;margin-top:16px;padding:10px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s}
+.cb-detail-more:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(99,102,241,.4)}

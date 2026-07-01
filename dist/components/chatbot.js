@@ -661,6 +661,9 @@
     const release = movie.release_date_clean || "未提供";
     const stars = Array.from({length:5}, (_,s) => s < Math.min(5,Math.max(1,Math.round(score/2))) ? "★" : "☆").join("");
 
+    const isHF = window.location.hostname.includes("hf.space");
+    const detailUrl = movie.id ? (isHF ? `/detail/${movie.id}` : `https://selinawang-MovieMind-AI.hf.space/detail/${movie.id}`) : "#";
+
     logs.innerHTML = `
       <div class="cb-detail">
         <button class="cb-detail-back" onclick="chatbotGoBack()">
@@ -680,6 +683,7 @@
           <div class="cb-detail-row"><span class="cb-detail-label">上映</span><span class="cb-detail-value">${escapeHtml(release)}</span></div>
           <div class="cb-detail-row"><span class="cb-detail-label">導演</span><span class="cb-detail-value" id="cb-detail-director">載入中...</span></div>
         </div>
+        <a href="${detailUrl}" target="_blank" class="cb-detail-more">🔍 查看完整詳情（導演/演員/劇情）▸</a>
       </div>`;
     logs.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -712,6 +716,15 @@
     injectFonts();
     buildDOM();
     loadMovieData();
+
+    // Auto-open chatbot if URL has ?open=chatbot
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("open") === "chatbot") {
+      setTimeout(() => { if (!isOpen) togglePanel(); }, 500);
+      // Clean up URL
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
   }
 
   if (document.readyState === "loading") {

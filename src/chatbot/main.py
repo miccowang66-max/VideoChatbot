@@ -277,7 +277,10 @@ def _detail_page_html(movie: dict, detail: dict, base: str) -> str:
 </head>
 <body>
   <header class="detail-header">
-    <a href="/" class="back-btn">&#8592; 返回電影列表</a>
+    <div class="header-left">
+      <a href="/" class="back-btn">&#8592; 返回電影列表</a>
+      <a href="/?open=chatbot" class="back-btn back-btn--ai">🤖 返回AI小幫手</a>
+    </div>
     <span class="header-title">🎬 HOT MOVIE小幫手</span>
   </header>
 
