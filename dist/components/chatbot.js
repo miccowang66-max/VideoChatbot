@@ -524,8 +524,22 @@
       return `[${m.id}] ${title} | 評分:${m.score_num||m.score} | 類別:${cats} | 國家:${m.country||""}`;
     }).join("\n");
 
-    const systemPrompt = `你是 HOT MOVIE小幫手，一個電影推薦助手。你擁有 100 部經典電影的資料庫。根據使用者輸入，從資料庫中推薦最合適的 3 部電影。只回覆電影編號(用逗號分隔，如: 1,5,23)和一句簡短推薦語。格式：\n電影: 1,5,23\n推薦語: [你的推薦]`;
-    const userPrompt = `電影資料庫：\n${movieList}\n\n使用者查詢: ${userQuery}`;
+    const systemPrompt = `你是 HOT MOVIE小幫手，一個專業的電影推薦 AI 助手。你擁有以下 100 部經典電影的資料庫：
+
+${movieList}
+
+你的能力：
+1. 根據使用者的心情、喜好、類別需求推薦合適的電影
+2. 回答關於電影的問題（劇情、評分、演員等）
+3. 用繁體中文回答，語氣親切專業
+4. 推薦時請說明推薦理由，讓回答豐富有趣
+5. 如果使用者的問題與電影無關，禮貌地引導回電影話題
+
+回答格式要求：
+- 先用 1-3 句話回應使用者（包含推薦理由）
+- 然後列出推薦的電影編號，格式為 [[movie_ids]] 編號1,編號2,編號3 [[/movie_ids]]
+- 例如：這部電影非常經典！[[movie_ids]] 1,5,23 [[/movie_ids]]
+- 如果不需要推薦電影，可以不列出編號`;
 
     try {
       let resp, data, content;
@@ -537,15 +551,15 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
-            generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+            contents: [{ parts: [{ text: systemPrompt + "\n\n使用者提問: " + userQuery }] }],
+            generationConfig: { maxOutputTokens: 500, temperature: 0.8 },
           }),
         });
         if (!resp.ok) return null;
         data = await resp.json();
         content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       } else {
-        // OpenAI / OpenCode (OpenAI-compatible API)
+        // OpenAI / Grok (OpenAI-compatible API)
         const urls = {
           openai: "https://api.openai.com/v1/chat/completions",
           grok: "https://api.x.ai/v1/chat/completions",
@@ -562,10 +576,10 @@
             model: model,
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
+              { role: "user", content: userQuery }
             ],
-            max_tokens: 200,
-            temperature: 0.7,
+            max_tokens: 500,
+            temperature: 0.8,
           }),
         });
         if (!resp.ok) return null;
@@ -575,17 +589,19 @@
 
       if (!content) return null;
 
-      // Parse movie IDs
-      const idMatch = content.match(/電影[：:]\s*([\d,\s]+)/) || content.match(/(\d+)[,\s]*(\d+)[,\s]*(\d+)/);
-      if (idMatch) {
-        const ids = (idMatch[1] + (idMatch[2]||"") + (idMatch[3]||"")).split(/[,\s]+/).map(Number).filter(n=>n>0);
-        const recMovies = ids.map(id => movieData.find(m => (m.id||0) === id)).filter(Boolean);
-        if (recMovies.length > 0) {
-          const recText = content.match(/推薦語[：:]\s*(.+)/)?.[1] || "AI 為您挑選：";
-          return { movies: recMovies.slice(0,3), intro: recText };
-        }
+      // Extract movie IDs from [[movie_ids]] ... [[/movie_ids]]
+      let recMovies = [];
+      const idBlock = content.match(/\[\[movie_ids\]\]\s*([\d,\s]+)\s*\[\[\/movie_ids\]\]/);
+      if (idBlock) {
+        const ids = idBlock[1].split(/[,\s]+/).map(Number).filter(n => n > 0);
+        recMovies = ids.map(id => movieData.find(m => (m.id||0) === id)).filter(Boolean).slice(0, 3);
       }
-      return null;
+
+      // Clean up the response text (remove the [[movie_ids]] block)
+      let replyText = content.replace(/\[\[movie_ids\]\][\s\S]*?\[\[\/movie_ids\]\]/g, "").trim();
+      if (!replyText) replyText = "AI 為您挑選：";
+
+      return { movies: recMovies, intro: replyText };
     } catch(e) {
       console.warn("LLM call failed:", e);
       return null;
@@ -609,8 +625,8 @@
     // Try LLM first if enabled
     if (useLLM && llmApiKey) {
       const llmResult = await callLLM(text);
-      if (llmResult && llmResult.movies.length > 0) {
-        typewriterReply("🤖 AI: " + llmResult.intro, llmResult.movies);
+      if (llmResult) {
+        typewriterReply("🤖 " + llmResult.intro, llmResult.movies);
         return;
       }
     }
